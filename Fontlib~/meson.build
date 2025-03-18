@@ -24,8 +24,8 @@ fontlib = shared_library('fontlib',
   dependencies : [freetype_dep],
   link_with : [harfbuzz_lib],
   install : true,
-  install_dir : meson.source_root() / 'Plugins/x64'  # Custom install path
+  install_dir : meson.source_root() / '../Plugins/x64'  # Custom install path
 )
 
 # Install the header file
-install_headers('include/fontlib.h', install_dir : 'Plugins/x64/include')
+install_headers('include/fontlib.h', install_dir : '../Plugins/x64/include')

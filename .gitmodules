@@ -1,6 +1,6 @@
-[submodule "subprojects/harfbuzz"]
-	path = subprojects/harfbuzz
+[submodule "Fontlib~/subprojects/harfbuzz"]
+	path = Fontlib~/subprojects/harfbuzz
 	url = https://github.com/harfbuzz/harfbuzz.git
-[submodule "subprojects/freetype"]
-	path = subprojects/freetype
+[submodule "Fontlib~/subprojects/freetype"]
+	path = Fontlib~/subprojects/freetype
 	url = https://github.com/freetype/freetype.git

@@ -6,7 +6,7 @@
 
 extern "C" __declspec(dllexport) int LoadFont(const unsigned char *fontData, size_t fontDataSize)
 {
-
+    return 0;
 }
 
 extern "C" __declspec(dllexport) void UnloadFont(int fontIndex)
