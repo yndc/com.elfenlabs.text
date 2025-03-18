@@ -1,0 +1,6 @@
+[submodule "subprojects/harfbuzz"]
+	path = subprojects/harfbuzz
+	url = https://github.com/harfbuzz/harfbuzz.git
+[submodule "subprojects/freetype"]
+	path = subprojects/freetype
+	url = https://github.com/freetype/freetype.git

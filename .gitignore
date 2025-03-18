@@ -1,0 +1,54 @@
+# Unity Package metadata
+.DS_Store
+*.meta~
+*.tmp
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+
+# Unity Package cache and logs
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Ll]ogs/
+/[Mm]emoryCaptures/
+
+# Visual Studio / VS Code
+.vs/
+.vscode/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.opendb
+
+# Rider
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Font working files
+*.psd
+*.ai
+*.sketch
+*.ttf.meta
+*.otf.meta
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+[Bb]in/
+[Oo]bj/
+
+build
+build-*
+subprojects
