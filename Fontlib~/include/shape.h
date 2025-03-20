@@ -5,11 +5,11 @@ namespace Text
 {
     struct Glyph
     {
-        int codePoint;
-        float xOffset;
-        float yOffset;
-        float xAdvance;
-        float yAdvance;
+        int32_t codePoint;
+        int32_t xOffset;
+        int32_t yOffset;
+        int32_t xAdvance;
+        int32_t yAdvance;
     };
 }
 

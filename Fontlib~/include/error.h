@@ -13,7 +13,10 @@ namespace Text
         Failure = 0001,
 
         // Font errors
-        FontNotFound = 1000
+        FontNotFound = 1000,
+
+        // Shaping errors
+        ShapingOutTooSmall = 2000
     };
 
     template <class T>

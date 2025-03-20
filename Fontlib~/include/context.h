@@ -29,7 +29,7 @@ namespace Text
         ~Context();
         Result<int> LoadFont(const unsigned char *fontData, size_t fontDataSize);
         Result<void> UnloadFont(int fontIndex);
-        Result<void> ShapeText(int fontIndex, const char *text, int textLen, Glyph **outGlyphs, int *outGlyphCount);
+        Result<void> ShapeText(int fontIndex, const char *text, int textLen, int maxGlyphs, Glyph *refGlyphs, int *outGlyphCount);
     };
 }
 

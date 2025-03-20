@@ -45,16 +45,17 @@ extern "C" __declspec(dllexport) Text::ErrorCode UnloadFont(
 };
 
 extern "C" __declspec(dllexport) Text::ErrorCode ShapeText(
-    void *ctx,               // Context
-    int fontIndex,           // Font index
-    const char *text,        // Text to shape
-    int textLen,             // Text length
-    Text::Glyph **outGlyphs, // Output glyphs
-    int *outGlyphCount       // Output glyph count
+    void *ctx,              // Context
+    int fontIndex,          // Font index
+    const char *text,       // Text to shape
+    int textLen,            // Text length
+    int maxGlyphs,          // Maximum number of glyphs
+    Text::Glyph *refGlyphs, // Output glyphs
+    int *outGlyphCount      // Output glyph count
 )
 {
     auto context = (Text::Context *)ctx;
-    auto result = context->ShapeText(fontIndex, text, textLen, outGlyphs, outGlyphCount);
+    auto result = context->ShapeText(fontIndex, text, textLen, maxGlyphs, refGlyphs, outGlyphCount);
     if (result.IsError())
         return Text::ErrorCode::Failure;
     return Text::ErrorCode::Success;

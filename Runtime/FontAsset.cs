@@ -1,5 +1,11 @@
 using UnityEngine;
 using Elfenlabs.Text;
+using System;
+using System.Runtime.InteropServices;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
+using System.Text;
+
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -43,17 +49,22 @@ namespace Elfenlabs.Text.Editor
                 FontLibrary.LoadFont(handle, out var fontIndex, fontData, fontData.Length);
                 Debug.Log($"Font Index: {fontIndex}");
 
-                var str = "Hello, World!😊😊😊";
-                FontLibrary.ShapeText(handle, fontIndex, str, str.Length, out var glyphs, out var glyphCount);
-
-                Debug.Log($"Glyph Count: {glyphCount}");
-                for (var i = 0; i < glyphCount; i++)
+                var str = "Hello, world!🥰🥰🥰";
+                unsafe
                 {
-                    unsafe
+                    var buf = new NativeArray<Glyph>(1024, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
+                    var textBytes = Encoding.UTF8.GetBytes(str);
+                    fixed (byte* ptr = textBytes)
                     {
-                        var glyph = ((Glyph*)glyphs)[i];
-                        Debug.Log($"Glyph {i}: {glyph.CodePoint} {glyph.XOffset} {glyph.YOffset} {glyph.XAdvance} {glyph.YAdvance}");
+                        FontLibrary.ShapeText(handle, fontIndex, (IntPtr)ptr, textBytes.Length, 1024, (IntPtr)buf.GetUnsafePtr(), out var glyphCount);
+                        Debug.Log($"Glyph Count: {glyphCount}");
+                        for (var i = 0; i < glyphCount; i++)
+                        {
+                            var glyph = buf[i];
+                            Debug.Log($"Glyph {i}: {glyph.CodePoint} {glyph.XOffset} {glyph.YOffset} {glyph.XAdvance} {glyph.YAdvance}");
+                        }
                     }
+                    buf.Dispose();
                 }
 
                 FontLibrary.DestroyContext(handle);

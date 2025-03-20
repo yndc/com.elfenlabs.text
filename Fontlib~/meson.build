@@ -10,12 +10,17 @@ freetype_dep = freetype_subproj.get_variable('freetype_dep')
 harfbuzz_subproj = subproject('harfbuzz')
 harfbuzz_lib = harfbuzz_subproj.get_variable('libharfbuzz')
 
+# Include msdf-atlas-gen as a CMake subproject
+msdf_atlas_gen_subproj = subproject('msdf-atlas-gen')
+msdf_atlas_gen_lib = msdf_atlas_gen_subproj.target('msdf-atlas-gen')
+
 # Define include directories
 inc_dirs = include_directories(
   'include',
   'src',
-    'subprojects/freetype/include',
-  'subprojects/harfbuzz/src'
+  'subprojects/freetype/include',
+  'subprojects/harfbuzz/src',
+  'subprojects/msdf-atlas-gen'
 )
 
 # Source files
@@ -30,7 +35,7 @@ fontlib = shared_library('fontlib',
   src_files,
   include_directories : inc_dirs,
   dependencies : [freetype_dep],
-  link_with : [harfbuzz_lib],
+  link_with : [harfbuzz_lib, msdf_atlas_gen_lib],
   cpp_args : ['-fvisibility=hidden'],
   link_args : ['-fvisibility=hidden'],
   install : true,

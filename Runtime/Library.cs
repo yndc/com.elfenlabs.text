@@ -18,10 +18,10 @@ namespace Elfenlabs.Text
     public struct Glyph
     {
         public int CodePoint;
-        public float XOffset;
-        public float YOffset;
-        public float XAdvance;
-        public float YAdvance;
+        public int XOffset;
+        public int YOffset;
+        public int XAdvance;
+        public int YAdvance;
     }
 
     public static class FontLibrary
@@ -68,9 +68,10 @@ namespace Elfenlabs.Text
         public static extern ErrorCode ShapeText(
             IntPtr ctx,
             int fontIndex,
-            string text,
+            IntPtr text,
             int textLen,
-            out IntPtr outGlyphs,
+            int maxGlyphs,
+            IntPtr refGlyphs,
             out int outGlyphCount
         );
     }
