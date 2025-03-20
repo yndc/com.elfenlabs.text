@@ -1,15 +1,15 @@
 {
-    "name": "com.elfenlabs.font",
-    "version": "0.0.1",
-    "displayName": "ElfenLabs Font",
-    "description": "Font library",
-    "unity": "6000.0",
-    "unityRelease": "37f1",
-    "dependencies": {
-        "com.unity.entities": "1.3"
-    },
-    "author": {
-        "name": "yonder",
-        "email": "yonder@elfenlabs.com"
-    }
+  "name": "com.elfenlabs.text",
+  "version": "0.0.1",
+  "displayName": "ElfenLabs Text Engine",
+  "description": "Font library",
+  "unity": "6000.0",
+  "unityRelease": "37f1",
+  "dependencies": {
+    "com.unity.entities": "1.3"
+  },
+  "author": {
+    "name": "yonder",
+    "email": "yonder@elfenlabs.com"
+  }
 }

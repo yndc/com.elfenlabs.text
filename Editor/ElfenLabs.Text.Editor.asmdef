@@ -1,0 +1,16 @@
+{
+    "name": "ElfenLabs.Text.Editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:7260892f809faec47a7ce1fc1ac25f33"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

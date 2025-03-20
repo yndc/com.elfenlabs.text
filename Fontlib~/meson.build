@@ -13,19 +13,29 @@ harfbuzz_lib = harfbuzz_subproj.get_variable('libharfbuzz')
 # Define include directories
 inc_dirs = include_directories(
   'include',
-  'subprojects/freetype/include',
+  'src',
+    'subprojects/freetype/include',
   'subprojects/harfbuzz/src'
 )
 
+# Source files
+src_files = [
+    'src/context.cpp',
+    'src/main.cpp',
+    'src/shape.cpp',
+]
+
 # Build fontlib as a shared library with static dependencies
 fontlib = shared_library('fontlib',
-  'src/fontlib.cpp',
+  src_files,
   include_directories : inc_dirs,
   dependencies : [freetype_dep],
   link_with : [harfbuzz_lib],
+  cpp_args : ['-fvisibility=hidden'],
+  link_args : ['-fvisibility=hidden'],
   install : true,
-  install_dir : meson.source_root() / '../Plugins/x64'  # Custom install path
+  install_dir : meson.project_source_root() / '../Plugins/x64'
 )
 
 # Install the header file
-install_headers('include/fontlib.h', install_dir : '../Plugins/x64/include')
+install_headers('include/api.h', install_dir : '../Plugins/x64/include')
