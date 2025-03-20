@@ -2,15 +2,15 @@ namespace Elfenlabs.Text
 {
     public static class FontManager
     {
-        public static void Initialize()
-        {
-            FontLibrary.Initialize();
-        }
+        // public static void Initialize()
+        // {
+        //     FontLibrary.Initialize();
+        // }
 
-        public static void Shutdown()
-        {
-            FontLibrary.Shutdown();
-        }
+        // public static void Shutdown()
+        // {
+        //     FontLibrary.Shutdown();
+        // }
 
         // public static unsafe int LoadFont(void* fontData, int fontDataSize)
         // {

@@ -39,10 +39,24 @@ namespace Elfenlabs.Text.Editor
                 Debug.Log($"Font Path: {fontPath}");
                 Debug.Log($"Font Data: {fontData.Length} bytes");
 
-                FontLibrary.Initialize();
-                var fontIndex = FontLibrary.LoadFont(fontData, fontData.Length);
+                FontLibrary.CreateContext(out var handle);
+                FontLibrary.LoadFont(handle, out var fontIndex, fontData, fontData.Length);
                 Debug.Log($"Font Index: {fontIndex}");
-                FontLibrary.Shutdown();
+
+                var str = "Hello, World!😊😊😊";
+                FontLibrary.ShapeText(handle, fontIndex, str, str.Length, out var glyphs, out var glyphCount);
+
+                Debug.Log($"Glyph Count: {glyphCount}");
+                for (var i = 0; i < glyphCount; i++)
+                {
+                    unsafe
+                    {
+                        var glyph = ((Glyph*)glyphs)[i];
+                        Debug.Log($"Glyph {i}: {glyph.CodePoint} {glyph.XOffset} {glyph.YOffset} {glyph.XAdvance} {glyph.YAdvance}");
+                    }
+                }
+
+                FontLibrary.DestroyContext(handle);
             }
         }
 #endif
