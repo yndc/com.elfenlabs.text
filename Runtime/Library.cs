@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using UnityEngine;
 
 namespace Elfenlabs.Text
 {
@@ -74,5 +75,43 @@ namespace Elfenlabs.Text
             IntPtr refGlyphs,
             out int outGlyphCount
         );
+
+        [DllImport("fontlib", CallingConvention = CallingConvention.Cdecl)]
+        public static extern ErrorCode DrawMTSDFGlyph(
+            IntPtr ctx,
+            int fontIndex,
+            int glyphIndex,
+            IntPtr refTexture,
+            int textureWidth
+        );
+
+        [DllImport("fontlib", CallingConvention = CallingConvention.Cdecl)]
+        public static extern ErrorCode DrawAtlas(
+            IntPtr ctx,
+            int fontIndex,
+            IntPtr text,
+            int textLen,
+            int textureSize,
+            IntPtr outTexture
+        );
+
+        [DllImport("fontlib", CallingConvention = CallingConvention.Cdecl)]
+        public static extern ErrorCode GetDebug(IntPtr ctx, IntPtr strPtr, IntPtr outPtrSize);
+
+        public static void PrintDebug(IntPtr ctx)
+        {
+            var buf = new byte[10000];
+            unsafe
+            {
+                fixed (byte* ptr = buf)
+                {
+                    var len = 0;
+                    GetDebug(ctx, (IntPtr)ptr, (IntPtr)(&len));
+                    // Debug.Log(System.Text.Encoding.UTF8.GetString(buf));
+                    Debug.Log(Marshal.PtrToStringAnsi((IntPtr)ptr, len));
+                    Debug.Log(len);
+                }
+            }
+        }
     }
 }
