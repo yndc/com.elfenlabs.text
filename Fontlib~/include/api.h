@@ -5,6 +5,8 @@
 #include "shape.h"
 #include "context.h"
 #include "atlas.h"
+#include "msdfgen.h"
+#include "msdfgen-ext.h"
 
 extern "C" __declspec(dllexport) Text::ErrorCode CreateContext(void **ctx)
 {
@@ -83,6 +85,7 @@ extern "C" __declspec(dllexport) Text::ErrorCode DrawAtlas(
     const char *text,
     int textLen,
     int textureSize,
+    int pixelSize,
     Text::RGBA32Pixel *outTexture)
 {
     auto context = (Text::Context *)ctx;
@@ -112,6 +115,7 @@ extern "C" __declspec(dllexport) Text::ErrorCode DrawAtlas(
 
     // Obtain metrics for all glyphs
     FT_Face face = context->faces[fontIndex]->ftFace;
+    FT_Set_Pixel_Sizes(face, 0, pixelSize);
     for (auto &glyph : glyphs)
     {
         FT_Load_Glyph(face, glyph.index, FT_LOAD_DEFAULT);
@@ -128,6 +132,11 @@ extern "C" __declspec(dllexport) Text::ErrorCode DrawAtlas(
     // Draw the atlas
     for (const auto &glyph : glyphs)
     {
+        msdfgen::Shape shape;
+        msdfgen::FontHandle font;
+        font.adoptFreetypeFont(face);
+        // msdfgen::loadGlyph(shape, )
+
         auto r = std::rand() % 255;
         auto g = std::rand() % 255;
         auto b = std::rand() % 255;

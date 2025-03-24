@@ -21,6 +21,8 @@ namespace Elfenlabs.Text.Editor
 
         public CharacterPreset BakeCharacterPresets;
 
+        public int GlyphSize = 32;
+
 #if UNITY_EDITOR
         [CustomEditor(typeof(FontAsset))]
         public class FontAssetEditor : UnityEditor.Editor
@@ -96,7 +98,14 @@ namespace Elfenlabs.Text.Editor
                     int rowStride = texture.width * pixelSize; // 512 * 4 = 2048 bytes per row
                     fixed (byte* strPtr = strBytes)
                     {
-                        FontLibrary.DrawAtlas(libCtx, fontIndex, (IntPtr)strPtr, strBytes.Length, texture.width, (IntPtr)rawTexPtr.GetUnsafePtr());
+                        FontLibrary.DrawAtlas(
+                            libCtx,
+                            fontIndex,
+                            (IntPtr)strPtr,
+                            strBytes.Length,
+                            texture.width,
+                            self.GlyphSize,
+                            (IntPtr)rawTexPtr.GetUnsafePtr());
                     }
                 }
                 texture.Apply();

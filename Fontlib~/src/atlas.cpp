@@ -94,11 +94,12 @@ namespace Text
             rows[row].height = std::max(rows[row].height, item.h);
             rows[row].items.push_back(item);
         }
+
+        // If we reached this far, this means that the items fit into the atlas.
+        // Further optimization are not necessary
+
         return 0;
     }
-
-    // If we reached this far, this means that the items fit into the atlas.
-    // Further optimization are not necessary
 
     // For each row, sort items by width
     // for (auto &row : rows)

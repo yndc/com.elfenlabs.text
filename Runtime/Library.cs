@@ -92,6 +92,7 @@ namespace Elfenlabs.Text
             IntPtr text,
             int textLen,
             int textureSize,
+            int pixelSize,
             IntPtr outTexture
         );
 

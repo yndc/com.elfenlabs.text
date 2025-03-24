@@ -11,6 +11,8 @@ namespace Elfenlabs.Text
     {
         Latin = 1 << 0,
         Cyrillic = 1 << 1,
+        Greek = 1 << 2,
+        Hebrew = 1 << 3,
     }
 
     public class CharacterSetBuilder
@@ -46,7 +48,7 @@ namespace Elfenlabs.Text
             // Apply presets
             if ((Presets & CharacterPreset.Latin) != 0)
             {
-                AddRange(0x0020, 0x007F);
+                AddRange(0x0020, 0x024F);
                 builder.Append("fi");
                 builder.Append("fl");
                 builder.Append("ff");

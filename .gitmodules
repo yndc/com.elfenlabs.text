@@ -4,9 +4,12 @@
 [submodule "Fontlib~/subprojects/freetype"]
 	path = Fontlib~/subprojects/freetype
 	url = https://github.com/freetype/freetype.git
-[submodule "Fontlib~/subprojects/msdf-atlas-gen"]
-	path = Fontlib~/subprojects/msdf-atlas-gen
-	url = https://github.com/Chlumsky/msdf-atlas-gen.git
 [submodule "Fontlib~/subprojects/freetype2"]
 	path = Fontlib~/subprojects/freetype2
 	url = https://github.com/freetype/freetype.git
+[submodule "Fontlib~/subprojects/msdfgen"]
+	path = Fontlib~/subprojects/msdfgen
+	url = https://github.com/Chlumsky/msdfgen.git
+[submodule "Fontlib~/subprojects/tinyxml2"]
+	path = Fontlib~/subprojects/tinyxml2
+	url = https://github.com/leethomason/tinyxml2.git
