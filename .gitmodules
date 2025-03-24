@@ -10,6 +10,6 @@
 [submodule "Fontlib~/subprojects/msdfgen"]
 	path = Fontlib~/subprojects/msdfgen
 	url = https://github.com/Chlumsky/msdfgen.git
-[submodule "Fontlib~/subprojects/tinyxml2"]
-	path = Fontlib~/subprojects/tinyxml2
-	url = https://github.com/leethomason/tinyxml2.git
+[submodule "Fontlib~/subprojects/clipper2"]
+	path = Fontlib~/subprojects/clipper2
+	url = https://github.com/AngusJohnson/Clipper2.git
