@@ -1,12 +1,18 @@
 #ifndef API_H
 #define API_H
 
+#include <set>
 #include "error.h"
 #include "shape.h"
 #include "context.h"
 #include "atlas.h"
 #include "msdfgen.h"
-#include "msdfgen-ext.h"
+#include <ft2build.h>
+#include FT_FREETYPE_H
+#include FT_OUTLINE_H
+#include "mathx.h"
+
+using namespace math;
 
 extern "C" __declspec(dllexport) Text::ErrorCode CreateContext(void **ctx)
 {
@@ -79,6 +85,79 @@ extern "C" __declspec(dllexport) Text::ErrorCode DrawMTSDFGlyph(
     return Text::ErrorCode::Success;
 };
 
+struct FtContext
+{
+    double scale;
+    float2 position;
+    msdfgen::Shape *shape;
+    msdfgen::Contour *contour;
+};
+
+msdfgen::EdgeHolder edgeHolder(float2 p0, float2 p1)
+{
+    return msdfgen::EdgeHolder(msdfgen::Point2(p0.x, p0.y), msdfgen::Point2(p1.x, p1.y));
+}
+
+msdfgen::EdgeHolder edgeHolder(float2 p0, float2 p1, float2 p2)
+{
+    return msdfgen::EdgeHolder(msdfgen::Point2(p0.x, p0.y), msdfgen::Point2(p1.x, p1.y), msdfgen::Point2(p2.x, p2.y));
+}
+
+msdfgen::EdgeHolder edgeHolder(float2 p0, float2 p1, float2 p2, float2 p3)
+{
+    return msdfgen::EdgeHolder(msdfgen::Point2(p0.x, p0.y), msdfgen::Point2(p1.x, p1.y), msdfgen::Point2(p2.x, p2.y), msdfgen::Point2(p3.x, p3.y));
+}
+
+static float2 ftPoint2(const FT_Vector &vector, double scale)
+{
+    return float2(scale * vector.x, scale * vector.y);
+}
+
+static int ftMoveTo(const FT_Vector *to, void *user)
+{
+    FtContext *context = reinterpret_cast<FtContext *>(user);
+    if (!(context->contour && context->contour->edges.empty()))
+        context->contour = &context->shape->addContour();
+    context->position = ftPoint2(*to, context->scale);
+    return 0;
+}
+
+static int ftLineTo(const FT_Vector *to, void *user)
+{
+    FtContext *context = reinterpret_cast<FtContext *>(user);
+    float2 endpoint = ftPoint2(*to, context->scale);
+    if (endpoint != context->position)
+    {
+        context->contour->addEdge(edgeHolder(context->position, endpoint));
+        context->position = endpoint;
+    }
+    return 0;
+}
+
+static int ftConicTo(const FT_Vector *control, const FT_Vector *to, void *user)
+{
+    FtContext *context = reinterpret_cast<FtContext *>(user);
+    float2 endpoint = ftPoint2(*to, context->scale);
+    if (endpoint != context->position)
+    {
+        context->contour->addEdge(edgeHolder(context->position, ftPoint2(*control, context->scale), endpoint));
+        context->position = endpoint;
+    }
+    return 0;
+}
+
+static int ftCubicTo(const FT_Vector *control1, const FT_Vector *control2, const FT_Vector *to, void *user)
+{
+    FtContext *context = reinterpret_cast<FtContext *>(user);
+    float2 endpoint = ftPoint2(*to, context->scale);
+    if (endpoint != context->position || math::cross(ftPoint2(*control1, context->scale) - endpoint, ftPoint2(*control2, context->scale) - endpoint))
+    {
+        context->contour->addEdge(edgeHolder(context->position, ftPoint2(*control1, context->scale), ftPoint2(*control2, context->scale), endpoint));
+        context->position = endpoint;
+    }
+    return 0;
+}
+
 extern "C" __declspec(dllexport) Text::ErrorCode DrawAtlas(
     void *ctx,
     int fontIndex,
@@ -133,14 +212,32 @@ extern "C" __declspec(dllexport) Text::ErrorCode DrawAtlas(
     for (const auto &glyph : glyphs)
     {
         msdfgen::Shape shape;
-        msdfgen::FontHandle font;
-        font.adoptFreetypeFont(face);
-        // msdfgen::loadGlyph(shape, )
+        FT_Load_Glyph(face, glyph.index, FT_LOAD_DEFAULT);
+        double scale = 1.0 / (1 << 6);
+        auto outline = &face->glyph->outline;
+        shape.contours.clear();
+        shape.inverseYAxis = false;
+        FtContext ftc = {};
+        ftc.scale = scale;
+        ftc.shape = &shape;
+        FT_Outline_Funcs ftFunctions;
+        ftFunctions.move_to = &ftMoveTo;
+        ftFunctions.line_to = &ftLineTo;
+        ftFunctions.conic_to = &ftConicTo;
+        ftFunctions.cubic_to = &ftCubicTo;
+        ftFunctions.shift = 0;
+        ftFunctions.delta = 0;
+        FT_Error error = FT_Outline_Decompose(outline, &ftFunctions, &ftc);
+        if (!shape.contours.empty() && shape.contours.back().edges.empty())
+            shape.contours.pop_back();
+        shape.normalize();
+        edgeColoringSimple(shape, 3.0);
 
-        auto r = std::rand() % 255;
-        auto g = std::rand() % 255;
-        auto b = std::rand() % 255;
+        // Draw the glyph
         context->debug << "Drawing glyph " << glyph.index << " at " << glyph.x << ", " << glyph.y << std::endl;
+        msdfgen::Bitmap<float, 4> outBitmap(32, 32);
+        msdfgen::SDFTransformation t(msdfgen::Projection(32.0, msdfgen::Vector2(0.125, 0.125)), msdfgen::Range(0.125));
+        msdfgen::generateMTSDF(outBitmap, shape, t);
         for (int dx = 0; dx < glyph.w; ++dx)
         {
             for (int dy = 0; dy < glyph.h; ++dy)
@@ -149,11 +246,12 @@ extern "C" __declspec(dllexport) Text::ErrorCode DrawAtlas(
                 int y = glyph.y + dy;
                 if (x >= 0 && x < textureSize && y >= 0 && y < textureSize)
                 {
-                    auto pixel = outTexture + y * textureSize + x;
-                    pixel->r = r;
-                    pixel->g = g;
-                    pixel->b = b;
-                    pixel->a = 255;
+                    auto dest = outTexture + y * textureSize + x;
+                    auto src = outBitmap(dx, dy);
+                    dest->r = static_cast<uint8_t>(*(src + 0) * 255.0f + 0.5f);
+                    dest->g = static_cast<uint8_t>(*(src + 1) * 255.0f + 0.5f);
+                    dest->b = static_cast<uint8_t>(*(src + 2) * 255.0f + 0.5f);
+                    dest->a = static_cast<uint8_t>(*(src + 3) * 255.0f + 0.5f);
                 }
             }
         }

@@ -112,7 +112,7 @@ namespace Elfenlabs.Text.Editor
                 EditorUtility.SetDirty(target);
                 AssetDatabase.SaveAssets();
 
-                FontLibrary.PrintDebug(libCtx);
+                // FontLibrary.PrintDebug(libCtx);
 
                 // Get glyph set from text shaping results
                 // var fontIndex = LoadFont();
@@ -173,6 +173,7 @@ namespace Elfenlabs.Text.Editor
                 {
                     rawColors[i] = new Color32(0, 0, 0, 0);
                 }
+                texture.name = "FontAtlas";
                 texture.Apply();
 
                 self.Texture = texture;
