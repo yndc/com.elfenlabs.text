@@ -1,7 +1,5 @@
 using UnityEngine;
-using Elfenlabs.Text;
 using System;
-using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using System.Text;
@@ -35,6 +33,7 @@ namespace Elfenlabs.Text.Editor
                 DrawDefaultInspector();
 
                 FontLibrary.CreateContext(out libCtx);
+                FontLibrary.SetUnityLogCallback(libCtx, FontLibrary.StandardLogger);
 
                 self = (FontAsset)target;
 
@@ -111,8 +110,6 @@ namespace Elfenlabs.Text.Editor
                 texture.Apply();
                 EditorUtility.SetDirty(target);
                 AssetDatabase.SaveAssets();
-
-                // FontLibrary.PrintDebug(libCtx);
 
                 // Get glyph set from text shaping results
                 // var fontIndex = LoadFont();

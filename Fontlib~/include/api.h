@@ -10,7 +10,11 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include FT_OUTLINE_H
-#include "mathx.h"
+#include "mathematics.h"
+
+typedef unsigned char byte;
+
+#define TEXTLIB_DEBUG
 
 using namespace math;
 
@@ -158,6 +162,11 @@ static int ftCubicTo(const FT_Vector *control1, const FT_Vector *control2, const
     return 0;
 }
 
+inline byte pixelFloatToByte(float x)
+{
+    return byte(~int(255.5f - 255.f * clamp(x)));
+}
+
 extern "C" __declspec(dllexport) Text::ErrorCode DrawAtlas(
     void *ctx,
     int fontIndex,
@@ -175,22 +184,21 @@ extern "C" __declspec(dllexport) Text::ErrorCode DrawAtlas(
     auto shapingResult = (Text::Glyph *)malloc(sizeof(Text::Glyph) * maxGlyphs);
     context->ShapeText(fontIndex, text, textLen, maxGlyphs, shapingResult, &glyphCount);
 
-    context->debug << "Glyph count: " << glyphCount << std::endl;
+    context->Log() << "Atlas character set: " << std::string(text, textLen);
 
     // Extract unique glyph indices
     auto glyphIndexSet = std::set<int>();
     for (int i = 0; i < glyphCount; ++i)
     {
         glyphIndexSet.insert(shapingResult[i].codePoint);
-        context->debug << "Glyph " << i << ": " << shapingResult[i].codePoint << std::endl;
     }
 
     auto glyphs = std::vector<Text::GlyphRect>();
     for (auto glyphIndex : glyphIndexSet)
     {
         glyphs.push_back({glyphIndex, 0, 0, 0, 0});
-        context->debug << "Unique glyph: " << glyphIndex << std::endl;
     }
+    context->Log() << "Unique glyph count: " << glyphs.size();
 
     // Obtain metrics for all glyphs
     FT_Face face = context->faces[fontIndex]->ftFace;
@@ -199,9 +207,9 @@ extern "C" __declspec(dllexport) Text::ErrorCode DrawAtlas(
     {
         FT_Load_Glyph(face, glyph.index, FT_LOAD_DEFAULT);
         auto metrics = face->glyph->metrics;
-        glyph.w = metrics.width >> 6; // Convert 26.6 to pixels
-        glyph.h = metrics.height >> 6;
-        context->debug << "Glyph " << glyph.index << " metrics: " << glyph.w << "x" << glyph.h << std::endl;
+        glyph.w = 32; // metrics.width >> 6; // Convert 26.6 to pixels
+        glyph.h = 32; // metrics.height >> 6;
+        context->Log() << "Glyph " << glyph.index << " metrics: " << glyph.w << "x" << glyph.h;
     }
 
     // Prepare the atlas
@@ -212,8 +220,8 @@ extern "C" __declspec(dllexport) Text::ErrorCode DrawAtlas(
     for (const auto &glyph : glyphs)
     {
         msdfgen::Shape shape;
-        FT_Load_Glyph(face, glyph.index, FT_LOAD_DEFAULT);
-        double scale = 1.0 / (1 << 6);
+        FT_Load_Glyph(face, glyph.index, FT_LOAD_NO_SCALE);
+        double scale = 1.0 / (face->units_per_EM ? face->units_per_EM : 1);
         auto outline = &face->glyph->outline;
         shape.contours.clear();
         shape.inverseYAxis = false;
@@ -234,13 +242,13 @@ extern "C" __declspec(dllexport) Text::ErrorCode DrawAtlas(
         edgeColoringSimple(shape, 3.0);
 
         // Draw the glyph
-        context->debug << "Drawing glyph " << glyph.index << " at " << glyph.x << ", " << glyph.y << std::endl;
-        msdfgen::Bitmap<float, 4> outBitmap(32, 32);
+        context->Log() << "Drawing glyph " << glyph.index << " at " << glyph.x << ", " << glyph.y;
+        msdfgen::Bitmap<float, 3> outBitmap(32, 32);
         msdfgen::SDFTransformation t(msdfgen::Projection(32.0, msdfgen::Vector2(0.125, 0.125)), msdfgen::Range(0.125));
-        msdfgen::generateMTSDF(outBitmap, shape, t);
-        for (int dx = 0; dx < glyph.w; ++dx)
+        msdfgen::generateMSDF(outBitmap, shape, t);
+        for (int dx = 0; dx < 32; ++dx)
         {
-            for (int dy = 0; dy < glyph.h; ++dy)
+            for (int dy = 0; dy < 32; ++dy)
             {
                 int x = glyph.x + dx;
                 int y = glyph.y + dy;
@@ -248,10 +256,10 @@ extern "C" __declspec(dllexport) Text::ErrorCode DrawAtlas(
                 {
                     auto dest = outTexture + y * textureSize + x;
                     auto src = outBitmap(dx, dy);
-                    dest->r = static_cast<uint8_t>(*(src + 0) * 255.0f + 0.5f);
-                    dest->g = static_cast<uint8_t>(*(src + 1) * 255.0f + 0.5f);
-                    dest->b = static_cast<uint8_t>(*(src + 2) * 255.0f + 0.5f);
-                    dest->a = static_cast<uint8_t>(*(src + 3) * 255.0f + 0.5f);
+                    dest->r = pixelFloatToByte(src[0]);
+                    dest->g = pixelFloatToByte(src[1]);
+                    dest->b = pixelFloatToByte(src[2]);
+                    dest->a = 255;
                 }
             }
         }
@@ -262,13 +270,13 @@ extern "C" __declspec(dllexport) Text::ErrorCode DrawAtlas(
     return Text::ErrorCode::Success;
 }
 
-extern "C" __declspec(dllexport) Text::ErrorCode GetDebug(
-    void *ctx,
-    void *outBuffer, int *outBufferSize)
+extern "C" __declspec(dllexport) Text::ErrorCode SetUnityLogCallback(
+    void *ctx,                      // Context
+    Text::UnityLogCallback callback // The callback function
+)
 {
     auto context = (Text::Context *)ctx;
-    context->GetDebug(outBuffer, outBufferSize);
-    return Text::ErrorCode::Success;
+    return context->SetUnityLogCallback(callback).GetError();
 };
 
 // extern "C" __declspec(dllexport) Text::ErrorCode AddGlyphsToDynamicAtlas(

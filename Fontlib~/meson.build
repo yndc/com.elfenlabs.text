@@ -3,10 +3,6 @@ project('fontlib', 'cpp',
   default_options: ['cpp_std=c++17', 'default_library=static']
 )
 
-if meson.get_compiler('cpp').get_id() == 'msvc'
-  add_project_arguments('/MD', language: 'cpp')
-endif
-
 cmake = import('cmake')
 
 # FreeType subproject
@@ -27,7 +23,7 @@ msdfgen_subproject = cmake.subproject('msdfgen',
         '-DMSDFGEN_CORE_ONLY=ON',
         '-DMSDFGEN_BUILD_STANDALONE=OFF',
         '-DMSDFGEN_USE_VCPKG=OFF',
-        '-DMSDFGEN_USE_OPENMP=ON',
+        '-DMSDFGEN_USE_OPENMP=OFF',
         '-DMSDFGEN_USE_CPP11=ON',
         '-DMSDFGEN_USE_SKIA=OFF',
         '-DMSDFGEN_DISABLE_SVG=ON',

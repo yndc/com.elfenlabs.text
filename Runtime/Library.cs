@@ -32,6 +32,8 @@ namespace Elfenlabs.Text
             public IntPtr Ptr;
         }
 
+        public delegate void UnityLogCallback(string message);
+
         public static Instance CreateInstance()
         {
             var error = CreateContext(out var ptr);
@@ -99,20 +101,13 @@ namespace Elfenlabs.Text
         [DllImport("fontlib", CallingConvention = CallingConvention.Cdecl)]
         public static extern ErrorCode GetDebug(IntPtr ctx, IntPtr strPtr, IntPtr outPtrSize);
 
-        public static void PrintDebug(IntPtr ctx)
+        [DllImport("fontlib", CallingConvention = CallingConvention.Cdecl)]
+        public static extern ErrorCode SetUnityLogCallback(IntPtr ctx, UnityLogCallback callback);
+
+        [AOT.MonoPInvokeCallback(typeof(UnityLogCallback))]
+        public static void StandardLogger(string message)
         {
-            var buf = new byte[10000];
-            unsafe
-            {
-                fixed (byte* ptr = buf)
-                {
-                    var len = 0;
-                    GetDebug(ctx, (IntPtr)ptr, (IntPtr)(&len));
-                    // Debug.Log(System.Text.Encoding.UTF8.GetString(buf));
-                    Debug.Log(Marshal.PtrToStringAnsi((IntPtr)ptr, len));
-                    Debug.Log(len);
-                }
-            }
+            Debug.Log("TextLib | " + message);
         }
     }
 }

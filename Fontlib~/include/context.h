@@ -13,6 +13,10 @@
 
 namespace Text
 {
+    // #ifdef TEXTLIB_DEBUG
+    typedef void (*UnityLogCallback)(const char *message);
+    // #endif
+
     class Face
     {
     public:
@@ -28,23 +32,54 @@ namespace Text
 
     public:
         std::vector<Face *> faces;
-        std::stringstream debug;
         Context();
         ~Context();
         Result<int> LoadFont(const unsigned char *fontData, size_t fontDataSize);
         Result<void> UnloadFont(int fontIndex);
         Result<void> ShapeText(int fontIndex, const char *text, int textLen, int maxGlyphs, Glyph *refGlyphs, int *outGlyphCount);
         Result<void> DrawMTSDFGlyph(int fontIndex, int glyphIndex, RGBA32Pixel *refTexture, int textureWidth);
-        Result<void> GetDebug(void *outBuffer, int *outBufferSize)
+
+        // #ifdef TEXTLIB_DEBUG
+        class LogStream
         {
-            auto str = debug.str();
-            auto ptr = str.c_str();
-            auto size = str.size();
-            memcpy(outBuffer, ptr, size);
-            *outBufferSize = size;
-            debug.clear();
+        public:
+            LogStream(UnityLogCallback callback) : callback(callback) {}
+            ~LogStream()
+            {
+                if (callback != nullptr)
+                    callback(ss.str().c_str());
+            }
+
+            template <typename T>
+            LogStream &operator<<(const T &value)
+            {
+                ss << value;
+                return *this;
+            }
+
+            LogStream &operator<<(std::ostream &(*manip)(std::ostream &))
+            {
+                ss << "\n";
+                return *this;
+            }
+
+        private:
+            std::stringstream ss;
+            UnityLogCallback callback;
+        };
+
+        Result<void> SetUnityLogCallback(UnityLogCallback callback)
+        {
+            unityLogCallback = callback;
             return Result<void>::Success();
         }
+        LogStream Log() { return LogStream(unityLogCallback); }
+        // #endif
+
+    private:
+        // #ifdef TEXTLIB_DEBUG
+        UnityLogCallback unityLogCallback;
+        // #endif
     };
 }
 

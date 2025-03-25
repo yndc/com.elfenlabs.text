@@ -46,5 +46,7 @@ namespace Text
 
         // Clean up
         hb_buffer_destroy(buffer);
+
+        return Result<void>::Success();
     }
 }
