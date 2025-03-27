@@ -7,12 +7,17 @@ using Unity.Jobs;
 
 namespace Elfenlabs.Text
 {
+    /// <summary>
+    /// Array that can be passed to and from C++ plugins.
+    /// Best practice to manage the lifetime of the buffer in the C# land.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     [StructLayout(LayoutKind.Sequential, Pack = 8)]
     public struct NativeBuffer<T> where T : unmanaged
     {
-        private IntPtr ptr;
-        private Allocator allocator;
-        private int size;
+        private readonly IntPtr ptr;
+        private readonly Allocator allocator;
+        private readonly int size;
 
         public static NativeBuffer<byte> FromString(string str, Allocator allocator)
         {
