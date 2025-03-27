@@ -1,5 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 
 namespace Elfenlabs.Text
@@ -32,23 +34,18 @@ namespace Elfenlabs.Text
             public IntPtr Ptr;
         }
 
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate IntPtr AllocCallback(int size, int alignment, Allocator allocator);
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void UnityLogCallback(string message);
 
-        public static Instance CreateInstance()
-        {
-            var error = CreateContext(out var ptr);
-            if (error != ErrorCode.Success)
-            {
-                throw new Exception($"Failed to create font context: {error}");
-            }
-            return new Instance
-            {
-                Ptr = ptr
-            };
-        }
-
         [DllImport("fontlib", CallingConvention = CallingConvention.Cdecl)]
-        public static extern ErrorCode CreateContext(out IntPtr ctx);
+        public static extern ErrorCode CreateContext(
+            UnityLogCallback logCallback,
+            AllocCallback allocCallback,
+            out IntPtr ctx
+        );
 
         [DllImport("fontlib", CallingConvention = CallingConvention.Cdecl)]
         public static extern ErrorCode DestroyContext(IntPtr ctx);
@@ -56,9 +53,8 @@ namespace Elfenlabs.Text
         [DllImport("fontlib", CallingConvention = CallingConvention.Cdecl)]
         public static extern ErrorCode LoadFont(
             IntPtr ctx,
-            out int fontIndex,
-            byte[] fontData,
-            int fontDataSize
+            NativeBuffer<byte> fontData,
+            out int fontIndex
         );
 
         [DllImport("fontlib", CallingConvention = CallingConvention.Cdecl)]
@@ -71,20 +67,9 @@ namespace Elfenlabs.Text
         public static extern ErrorCode ShapeText(
             IntPtr ctx,
             int fontIndex,
-            IntPtr text,
-            int textLen,
-            int maxGlyphs,
-            IntPtr refGlyphs,
-            out int outGlyphCount
-        );
-
-        [DllImport("fontlib", CallingConvention = CallingConvention.Cdecl)]
-        public static extern ErrorCode DrawMTSDFGlyph(
-            IntPtr ctx,
-            int fontIndex,
-            int glyphIndex,
-            IntPtr refTexture,
-            int textureWidth
+            Allocator allocator,
+            NativeBuffer<byte> text,
+            out NativeBuffer<Glyph> outGlyphs
         );
 
         [DllImport("fontlib", CallingConvention = CallingConvention.Cdecl)]
@@ -105,9 +90,18 @@ namespace Elfenlabs.Text
         public static extern ErrorCode SetUnityLogCallback(IntPtr ctx, UnityLogCallback callback);
 
         [AOT.MonoPInvokeCallback(typeof(UnityLogCallback))]
-        public static void StandardLogger(string message)
+        public static void UnityLog(string message)
         {
             Debug.Log("TextLib | " + message);
+        }
+
+        [AOT.MonoPInvokeCallback(typeof(AllocCallback))]
+        public static IntPtr UnityAllocator(int size, int alignment, Allocator allocator)
+        {
+            unsafe
+            {
+                return (IntPtr)UnsafeUtility.Malloc(size, alignment, allocator);
+            }
         }
     }
 }

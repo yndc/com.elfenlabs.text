@@ -2,9 +2,10 @@
 #define API_H
 
 #include <set>
+#include "types.h"
 #include "error.h"
-#include "shape.h"
 #include "context.h"
+#include "shape.h"
 #include "atlas.h"
 #include "msdfgen.h"
 #include <ft2build.h>
@@ -12,81 +13,53 @@
 #include FT_OUTLINE_H
 #include "mathematics.h"
 
-typedef unsigned char byte;
-
 #define TEXTLIB_DEBUG
+
+#define EXPORT_DLL extern "C" __declspec(dllexport) Text::ErrorCode
 
 using namespace math;
 
-extern "C" __declspec(dllexport) Text::ErrorCode CreateContext(void **ctx)
+EXPORT_DLL CreateContext(LogCallback logCallback, AllocCallback allocCallback, void **outCtx)
 {
-    *ctx = new Text::Context();
+    *outCtx = new Text::Context(logCallback, allocCallback);
     return Text::ErrorCode::Success;
 }
 
-extern "C" __declspec(dllexport) Text::ErrorCode DestroyContext(void *ctx)
+EXPORT_DLL DestroyContext(void *ctx)
 {
     delete (Text::Context *)ctx;
     return Text::ErrorCode::Success;
 }
 
-extern "C" __declspec(dllexport) Text::ErrorCode LoadFont(
-    void *ctx,                     // Context
-    void *outFontIndex,            // Out font index
-    const unsigned char *fontData, // Font file data (e.g., TTF)
-    size_t fontDataSize            // Size of font data
+EXPORT_DLL LoadFont(
+    void *ctx,               // Context
+    Buffer<byte> inFontData, // Font data
+    int *outFontIndex        // Out font index
 )
 {
     auto context = (Text::Context *)ctx;
-    auto result = context->LoadFont(fontData, fontDataSize);
-    if (result.IsError())
-        return Text::ErrorCode::Failure;
-    *(int *)outFontIndex = result.GetValue();
-    return Text::ErrorCode::Success;
+    return context->LoadFont(inFontData, outFontIndex);
 };
 
-extern "C" __declspec(dllexport) Text::ErrorCode UnloadFont(
+EXPORT_DLL UnloadFont(
     void *ctx,    // Context
     int fontIndex // Font index
 )
 {
     auto context = (Text::Context *)ctx;
-    auto result = context->UnloadFont(fontIndex);
-    if (result.IsError())
-        return Text::ErrorCode::Failure;
-    return Text::ErrorCode::Success;
+    return context->UnloadFont(fontIndex);
 };
 
-extern "C" __declspec(dllexport) Text::ErrorCode ShapeText(
-    void *ctx,              // Context
-    int fontIndex,          // Font index
-    const char *text,       // Text to shape
-    int textLen,            // Text length
-    int maxGlyphs,          // Maximum number of glyphs
-    Text::Glyph *refGlyphs, // Output glyphs
-    int *outGlyphCount      // Output glyph count
+EXPORT_DLL ShapeText(
+    void *ctx,                       // Context
+    int fontIndex,                   // Font index
+    Allocator allocator,             // Allocator
+    Buffer<char> inText,             // Text sample to shape
+    OutBuffer<Text::Glyph> outGlyphs // Reference to the glyph buffer
 )
 {
     auto context = (Text::Context *)ctx;
-    auto result = context->ShapeText(fontIndex, text, textLen, maxGlyphs, refGlyphs, outGlyphCount);
-    if (result.IsError())
-        return Text::ErrorCode::Failure;
-    return Text::ErrorCode::Success;
-};
-
-extern "C" __declspec(dllexport) Text::ErrorCode DrawMTSDFGlyph(
-    void *ctx,                  // Context
-    int fontIndex,              // Font index
-    int glyphIndex,             // Glyph index
-    Text::RGBA32Pixel *texture, // Texture
-    int textureWidth            // Texture width
-)
-{
-    auto context = (Text::Context *)ctx;
-    auto result = context->DrawMTSDFGlyph(fontIndex, glyphIndex, texture, textureWidth);
-    if (result.IsError())
-        return Text::ErrorCode::Failure;
-    return Text::ErrorCode::Success;
+    return context->ShapeText(fontIndex, allocator, inText, outGlyphs);
 };
 
 struct FtContext
@@ -167,132 +140,96 @@ inline byte pixelFloatToByte(float x)
     return byte(~int(255.5f - 255.f * clamp(x)));
 }
 
-extern "C" __declspec(dllexport) Text::ErrorCode DrawAtlas(
-    void *ctx,
-    int fontIndex,
-    const char *text,
-    int textLen,
-    int textureSize,
-    int pixelSize,
-    Text::RGBA32Pixel *outTexture)
-{
-    auto context = (Text::Context *)ctx;
-
-    // Shape the text to get the glyphs
-    int maxGlyphs = textLen * 2;
-    int glyphCount;
-    auto shapingResult = (Text::Glyph *)malloc(sizeof(Text::Glyph) * maxGlyphs);
-    context->ShapeText(fontIndex, text, textLen, maxGlyphs, shapingResult, &glyphCount);
-
-    context->Log() << "Atlas character set: " << std::string(text, textLen);
-
-    // Extract unique glyph indices
-    auto glyphIndexSet = std::set<int>();
-    for (int i = 0; i < glyphCount; ++i)
-    {
-        glyphIndexSet.insert(shapingResult[i].codePoint);
-    }
-
-    auto glyphs = std::vector<Text::GlyphRect>();
-    for (auto glyphIndex : glyphIndexSet)
-    {
-        glyphs.push_back({glyphIndex, 0, 0, 0, 0});
-    }
-    context->Log() << "Unique glyph count: " << glyphs.size();
-
-    // Obtain metrics for all glyphs
-    FT_Face face = context->faces[fontIndex]->ftFace;
-    FT_Set_Pixel_Sizes(face, 0, pixelSize);
-    for (auto &glyph : glyphs)
-    {
-        FT_Load_Glyph(face, glyph.index, FT_LOAD_DEFAULT);
-        auto metrics = face->glyph->metrics;
-        glyph.w = 32; // metrics.width >> 6; // Convert 26.6 to pixels
-        glyph.h = 32; // metrics.height >> 6;
-        context->Log() << "Glyph " << glyph.index << " metrics: " << glyph.w << "x" << glyph.h;
-    }
-
-    // Prepare the atlas
-    auto atlas = Text::AtlasBuilder(textureSize);
-    auto atlasResult = atlas.Add(glyphs);
-
-    // Draw the atlas
-    for (const auto &glyph : glyphs)
-    {
-        msdfgen::Shape shape;
-        FT_Load_Glyph(face, glyph.index, FT_LOAD_NO_SCALE);
-        double scale = 1.0 / (face->units_per_EM ? face->units_per_EM : 1);
-        auto outline = &face->glyph->outline;
-        shape.contours.clear();
-        shape.inverseYAxis = false;
-        FtContext ftc = {};
-        ftc.scale = scale;
-        ftc.shape = &shape;
-        FT_Outline_Funcs ftFunctions;
-        ftFunctions.move_to = &ftMoveTo;
-        ftFunctions.line_to = &ftLineTo;
-        ftFunctions.conic_to = &ftConicTo;
-        ftFunctions.cubic_to = &ftCubicTo;
-        ftFunctions.shift = 0;
-        ftFunctions.delta = 0;
-        FT_Error error = FT_Outline_Decompose(outline, &ftFunctions, &ftc);
-        if (!shape.contours.empty() && shape.contours.back().edges.empty())
-            shape.contours.pop_back();
-        shape.normalize();
-        edgeColoringSimple(shape, 3.0);
-
-        // Draw the glyph
-        context->Log() << "Drawing glyph " << glyph.index << " at " << glyph.x << ", " << glyph.y;
-        msdfgen::Bitmap<float, 3> outBitmap(32, 32);
-        msdfgen::SDFTransformation t(msdfgen::Projection(32.0, msdfgen::Vector2(0.125, 0.125)), msdfgen::Range(0.125));
-        msdfgen::generateMSDF(outBitmap, shape, t);
-        for (int dx = 0; dx < 32; ++dx)
-        {
-            for (int dy = 0; dy < 32; ++dy)
-            {
-                int x = glyph.x + dx;
-                int y = glyph.y + dy;
-                if (x >= 0 && x < textureSize && y >= 0 && y < textureSize)
-                {
-                    auto dest = outTexture + y * textureSize + x;
-                    auto src = outBitmap(dx, dy);
-                    dest->r = pixelFloatToByte(src[0]);
-                    dest->g = pixelFloatToByte(src[1]);
-                    dest->b = pixelFloatToByte(src[2]);
-                    dest->a = 255;
-                }
-            }
-        }
-    }
-
-    // Clean up
-    free(shapingResult);
-    return Text::ErrorCode::Success;
-}
-
-extern "C" __declspec(dllexport) Text::ErrorCode SetUnityLogCallback(
-    void *ctx,                      // Context
-    Text::UnityLogCallback callback // The callback function
+EXPORT_DLL DrawAtlas(
+    void *ctx,                     // Context
+    int fontIndex,                 // Font index
+    const char *text,              // Text sample to shape
+    int textLen,                   // Text sample length
+    int textureSize,               // Texture size
+    int glyphSize,                 // Glyph size in pixels
+    int padding,                   // Padding between glyphs
+    Text::RGBA32Pixel *outTexture, // Output texture pointer
+    Text::GlyphRect *outGlyphRects // Output glyph rects
 )
 {
     auto context = (Text::Context *)ctx;
-    return context->SetUnityLogCallback(callback).GetError();
-};
 
-// extern "C" __declspec(dllexport) Text::ErrorCode AddGlyphsToDynamicAtlas(
-//     void *ctx,                    // Context
-//     int fontIndex,                // Font index
-//     int *glyphIndices,            // Pointer to array of glyph indices
-//     int glyphIndicesLen,          // Length of glyph indices array
-//     int textureSize,              // Texture size
-//     Text::RGBA32Pixel *outTexture // Output texture pointer
-// )
-// {
-//     auto context = (Text::Context *)ctx;
-//     auto result = context->AddGlyphsToDynamicAtlas(fontIndex, glyphIndices, glyphIndicesLen, textureSize, outTexture);
-//     if (result.IsError())
-//         return Text::ErrorCode::Failure;
-//     return Text::ErrorCode::Success;
-// };
+    return Text::ErrorCode::Success;
+
+    // // Obtain metrics for all glyphs
+    // FT_Face face = context->faces[fontIndex]->ftFace;
+    // FT_Set_Pixel_Sizes(face, 0, glyphSize);
+    // for (auto &glyph : glyphs)
+    // {
+    //     FT_Load_Glyph(face, glyph.index, FT_LOAD_DEFAULT);
+    //     auto metrics = face->glyph->metrics;
+    //     glyph.w = metrics.width >> 6;
+    //     glyph.h = metrics.height >> 6;
+    //     context->Log() << "Glyph " << glyph.index << " metrics: " << glyph.w << "x" << glyph.h;
+    // }
+
+    // // Prepare the atlas
+    // auto atlas = Text::AtlasBuilder(textureSize);
+    // auto atlasResult = atlas.Add(glyphs);
+
+    // // Draw the atlas
+    // for (int i = 0; i < glyphs.size(); i++)
+    // {
+    //     auto &glyph = glyphs[i];
+
+    //     // Write the glyph rect to the output map
+    //     outGlyphRects[i] = glyph;
+
+    //     // Draw the glyph
+    //     msdfgen::Shape shape;
+    //     FT_Load_Glyph(face, glyph.index, FT_LOAD_NO_SCALE);
+    //     double scale = 1.0 / (face->units_per_EM ? face->units_per_EM : 1);
+    //     auto outline = &face->glyph->outline;
+    //     shape.contours.clear();
+    //     shape.inverseYAxis = false;
+    //     FtContext ftc = {};
+    //     ftc.scale = scale;
+    //     ftc.shape = &shape;
+    //     FT_Outline_Funcs ftFunctions;
+    //     ftFunctions.move_to = &ftMoveTo;
+    //     ftFunctions.line_to = &ftLineTo;
+    //     ftFunctions.conic_to = &ftConicTo;
+    //     ftFunctions.cubic_to = &ftCubicTo;
+    //     ftFunctions.shift = 0;
+    //     ftFunctions.delta = 0;
+    //     FT_Error error = FT_Outline_Decompose(outline, &ftFunctions, &ftc);
+    //     if (!shape.contours.empty() && shape.contours.back().edges.empty())
+    //         shape.contours.pop_back();
+    //     shape.normalize();
+    //     edgeColoringSimple(shape, 3.0);
+    //     context->Log() << "Drawing glyph " << glyph.index << " at " << glyph.x << ", " << glyph.y;
+    //     msdfgen::Bitmap<float, 3> outBitmap(glyphSize, glyphSize);
+    //     msdfgen::SDFTransformation t(msdfgen::Projection(glyphSize, msdfgen::Vector2(0.125, 0.125)), msdfgen::Range(0.125));
+    //     msdfgen::generateMSDF(outBitmap, shape, t);
+    //     for (int dx = 0; dx < glyph.w; ++dx)
+    //     {
+    //         for (int dy = 0; dy < glyph.y; ++dy)
+    //         {
+    //             int destX = glyph.x + dx;
+    //             int destY = glyph.y + dy;
+    //             int srcX = (glyphSize - glyph.w) / 2 + dx;
+    //             int srcY = (glyphSize - glyph.h) / 2 + dy;
+    //             if (destX >= 0 && destX < textureSize && destY >= 0 && destY < textureSize)
+    //             {
+    //                 auto dest = outTexture + destY * textureSize + destX;
+    //                 auto src = outBitmap(srcX, srcY);
+    //                 dest->r = pixelFloatToByte(src[0]);
+    //                 dest->g = pixelFloatToByte(src[1]);
+    //                 dest->b = pixelFloatToByte(src[2]);
+    //                 dest->a = 255;
+    //             }
+    //         }
+    //     }
+    // }
+
+    // // Clean up
+    // free(shapingResult);
+    // return Text::ErrorCode::Success;
+}
 
 #endif

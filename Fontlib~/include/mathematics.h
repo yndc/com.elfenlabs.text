@@ -1,4 +1,5 @@
-#include "msdfgen.h"
+#ifndef MATHEMATICS_H
+#define MATHEMATICS_H
 
 namespace math
 {
@@ -8,7 +9,6 @@ namespace math
         float y;
         float2(float x, float y) : x(x), y(y) {}
         float2() : x(0), y(0) {}
-        // operator msdfgen::Point2() { return msdfgen::Point2(x, y); }
         inline float2 operator-() const { return float2(-x, -y); }
         inline float2 operator+(const float2 &rhs) const { return float2(x + rhs.x, y + rhs.y); }
         inline float2 operator-(const float2 &rhs) const { return float2(x - rhs.x, y - rhs.y); }
@@ -32,3 +32,5 @@ namespace math
         return n >= T(0) && n <= T(1) ? n : T(n > T(0));
     }
 }
+
+#endif

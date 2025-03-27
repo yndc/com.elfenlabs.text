@@ -32,49 +32,63 @@ namespace Elfenlabs.Text.Editor
             {
                 DrawDefaultInspector();
 
-                FontLibrary.CreateContext(out libCtx);
-                FontLibrary.SetUnityLogCallback(libCtx, FontLibrary.StandardLogger);
-
                 self = (FontAsset)target;
 
                 if (GUILayout.Button("Shape Test"))
                 {
+                    PrepareLibrary();
                     ShapeTest();
                 }
 
                 if (GUILayout.Button("Generate Test"))
                 {
+                    PrepareLibrary();
                     Generate();
                 }
 
                 if (GUILayout.Button("Clear Texture"))
                 {
+                    PrepareLibrary();
                     ClearTexture();
                 }
 
-                FontLibrary.DestroyContext(libCtx);
+                CleanupLibrary();
+            }
+
+            void PrepareLibrary()
+            {
+                FontLibrary.CreateContext(FontLibrary.UnityLog, FontLibrary.UnityAllocator, out libCtx);
+            }
+
+            void CleanupLibrary()
+            {
+                if (libCtx != IntPtr.Zero)
+                {
+                    FontLibrary.DestroyContext(libCtx);
+                    libCtx = IntPtr.Zero;
+                }
             }
 
             public void ShapeTest()
             {
                 var fontIndex = LoadFont();
                 var str = "Hello, world!🥰🥰🥰";
-                unsafe
+                var buf = NativeBuffer<byte>.FromString(str, Allocator.Temp);
+                FontLibrary.ShapeText(
+                    libCtx,
+                    fontIndex,
+                    Allocator.Temp,
+                    buf,
+                    out var glyphs);
+                Debug.Log($"Glyph Count: {glyphs.Count()}");
+                for (var i = 0; i < glyphs.Count(); i++)
                 {
-                    var buf = new NativeArray<Glyph>(1024, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
-                    var textBytes = Encoding.UTF8.GetBytes(str);
-                    fixed (byte* ptr = textBytes)
-                    {
-                        FontLibrary.ShapeText(libCtx, fontIndex, (IntPtr)ptr, textBytes.Length, 1024, (IntPtr)buf.GetUnsafePtr(), out var glyphCount);
-                        Debug.Log($"Glyph Count: {glyphCount}");
-                        for (var i = 0; i < glyphCount; i++)
-                        {
-                            var glyph = buf[i];
-                            Debug.Log($"Glyph {i}: {glyph.CodePoint} {glyph.XOffset} {glyph.YOffset} {glyph.XAdvance} {glyph.YAdvance}");
-                        }
-                    }
-                    buf.Dispose();
+                    var glyph = glyphs[i];
+                    Debug.Log($"Glyph {i}: {glyph.CodePoint} {glyph.XOffset} {glyph.YOffset} {glyph.XAdvance} {glyph.YAdvance}");
                 }
+
+                buf.Dispose();
+                glyphs.Dispose();
             }
 
             public void Generate()
@@ -135,27 +149,6 @@ namespace Elfenlabs.Text.Editor
                 // buf.Dispose();
             }
 
-            public void DrawTest()
-            {
-                if (self.Texture == null)
-                    ClearTexture();
-
-                var texture = self.Texture;
-                var offsetX = UnityEngine.Random.Range(0, 512 - 32); ;
-                var offsetY = UnityEngine.Random.Range(0, 512 - 32); ;
-                var rawColors = texture.GetRawTextureData<Color32>();
-                unsafe
-                {
-                    int pixelSize = 4; // Each Color32 is 4 bytes (R, G, B, A)
-                    int rowStride = texture.width * pixelSize; // 512 * 4 = 2048 bytes per row
-                    IntPtr ptr = (IntPtr)rawColors.GetUnsafePtr() + offsetY * rowStride + offsetX * pixelSize;
-                    FontLibrary.DrawMTSDFGlyph(libCtx, 0, 32, ptr, texture.width);
-                }
-                texture.Apply();
-                EditorUtility.SetDirty(target);
-                AssetDatabase.SaveAssets();
-            }
-
             public void ClearTexture()
             {
                 if (self.Texture != null)
@@ -185,13 +178,16 @@ namespace Elfenlabs.Text.Editor
                 var fontName = font.name;
                 var fontPath = AssetDatabase.GetAssetPath(font);
                 var fontData = System.IO.File.ReadAllBytes(fontPath);
+                var fontBuf = NativeBuffer<byte>.FromBytes(fontData, Allocator.Temp);
 
                 Debug.Log($"Font Name: {fontName}");
                 Debug.Log($"Font Path: {fontPath}");
                 Debug.Log($"Font Data: {fontData.Length} bytes");
 
-                FontLibrary.LoadFont(libCtx, out var fontIndex, fontData, fontData.Length);
+                FontLibrary.LoadFont(libCtx, fontBuf, out var fontIndex);
                 Debug.Log($"Font Index: {fontIndex}");
+
+                fontBuf.Dispose();
 
                 return fontIndex;
             }

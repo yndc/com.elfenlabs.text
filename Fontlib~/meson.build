@@ -75,11 +75,7 @@ inc_dirs = include_directories(
 
 # Source files
 src_files = [
-    'src/context.cpp',
-    'src/main.cpp',
-    'src/shape.cpp',
-    'src/texture.cpp',
-    'src/atlas.cpp'
+    'src/main.cpp'
 ]
 
 # Build fontlib
