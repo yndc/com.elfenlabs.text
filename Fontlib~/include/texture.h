@@ -36,13 +36,24 @@ namespace Text
         shape.normalize();
         edgeColoringSimple(shape, 3.0);
 
+        // auto bounds = shape.getBounds();
         float scale = glyphSize;
-        msdfgen::Vector2 translate(padding / scale);
-        msdfgen::Bitmap<float, 3> outBitmap(glyphSize + padding * 2, glyphSize + padding * 2);
+        int bitmapSize = glyphSize + padding * 2;
+
+        // Get glyph bounds from Shape (normalized 0-1 units)
+        msdfgen::Shape::Bounds bounds = shape.getBounds();
+        float glyphLeft = bounds.l;
+        float glyphBottom = bounds.b;
+        float translateX = (padding - glyphLeft * scale) / scale;
+        float translateY = (padding - glyphBottom * scale) / scale;
+
+        // msdfgen::Vector2 translate(padding / scale);
+        msdfgen::Vector2 translate(translateX, translateY);
+        msdfgen::Bitmap<float, 4> outBitmap(bitmapSize, bitmapSize);
         msdfgen::Projection projection = msdfgen::Projection(scale, translate);
         msdfgen::SDFTransformation transform(projection, msdfgen::Range(0.25));
         msdfgen::MSDFGeneratorConfig config(true);
-        msdfgen::generateMSDF(outBitmap, shape, transform, config);
+        msdfgen::generateMTSDF(outBitmap, shape, transform, config);
         for (int dx = 0; dx < glyphRect.w; ++dx)
         {
             for (int dy = 0; dy < glyphRect.h; ++dy)
@@ -58,7 +69,7 @@ namespace Text
                     dest->r = pixelFloatToByte(src[0]);
                     dest->g = pixelFloatToByte(src[1]);
                     dest->b = pixelFloatToByte(src[2]);
-                    dest->a = 255;
+                    dest->a = pixelFloatToByte(src[3]);
                 }
             }
         }
