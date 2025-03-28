@@ -138,7 +138,7 @@ namespace Text
         msdfgen::Shape::Bounds bounds = shape.getBounds();
         double maxDim = std::max(bounds.r - bounds.l, bounds.t - bounds.b); // Largest dimension
         double scale = glyphSize;
-        msdfgen::Vector2 translate(padding);
+        msdfgen::Vector2 translate(padding / scale / 2);
 
         msdfgen::Bitmap<float, 3> outBitmap(glyphSize + padding, glyphSize + padding);
         msdfgen::Projection projection = msdfgen::Projection(scale, translate);
@@ -154,8 +154,8 @@ namespace Text
             {
                 int destX = glyphRect.x + dx;
                 int destY = glyphRect.y + dy;
-                int srcX = padding + dx; // + offsetX;
-                int srcY = padding + dy; // + offsetY;
+                int srcX = dx; // + offsetX;
+                int srcY = dy; // + offsetY;
                 if (destX >= 0 && destX < textureSize && destY >= 0 && destY < textureSize)
                 {
                     auto dest = refTexture->Data() + destY * textureSize + destX;
