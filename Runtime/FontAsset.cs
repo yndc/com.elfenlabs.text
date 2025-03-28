@@ -21,6 +21,10 @@ namespace Elfenlabs.Text.Editor
 
         public int GlyphSize = 32;
 
+        public int AtlasSize = 512;
+
+        public int Padding = 2;
+
 #if UNITY_EDITOR
         [CustomEditor(typeof(FontAsset))]
         public class FontAssetEditor : UnityEditor.Editor
@@ -57,7 +61,11 @@ namespace Elfenlabs.Text.Editor
 
             void PrepareLibrary()
             {
-                FontLibrary.CreateContext(FontLibrary.UnityLog, FontLibrary.UnityAllocator, out libCtx);
+                FontLibrary.CreateContext(
+                    FontLibrary.UnityLog,
+                    FontLibrary.UnityAllocator,
+                    FontLibrary.UnityDisposer,
+                    out libCtx);
             }
 
             void CleanupLibrary()
@@ -98,55 +106,38 @@ namespace Elfenlabs.Text.Editor
                 // Prepare character set for generation
                 var charsetBuilder = new CharacterSetBuilder().WithPreset(CharacterPreset.Latin);
                 var str = charsetBuilder.ToString();
-                var strBytes = Encoding.UTF8.GetBytes(str);
+                var stringBuffer = NativeBuffer<byte>.FromString(str, Allocator.Temp);
                 Debug.Log("String: " + str);
 
                 // Generate the atlas 
                 var texture = self.Texture;
                 var fontIndex = LoadFont();
-                var rawTexPtr = texture.GetRawTextureData<Color32>();
-                unsafe
-                {
-                    int pixelSize = 4; // Each Color32 is 4 bytes (R, G, B, A)
-                    int rowStride = texture.width * pixelSize; // 512 * 4 = 2048 bytes per row
-                    fixed (byte* strPtr = strBytes)
-                    {
-                        FontLibrary.DrawAtlas(
-                            libCtx,
-                            fontIndex,
-                            (IntPtr)strPtr,
-                            strBytes.Length,
-                            texture.width,
-                            self.GlyphSize,
-                            (IntPtr)rawTexPtr.GetUnsafePtr());
-                    }
-                }
+                var textureBuffer = NativeBuffer<Color32>.FromArray(texture.GetRawTextureData<Color32>());
+                NativeBuffer<Glyph> glyphsBuffer;
+                FontLibrary.DrawAtlas(
+                    libCtx,
+                    fontIndex,
+                    texture.width,
+                    self.GlyphSize,
+                    self.Padding,
+                    Allocator.Temp,
+                    in stringBuffer,
+                    ref textureBuffer,
+                    out glyphsBuffer
+                );
                 texture.Apply();
                 EditorUtility.SetDirty(target);
                 AssetDatabase.SaveAssets();
 
-                // Get glyph set from text shaping results
-                // var fontIndex = LoadFont();
-                // var buf = new NativeArray<Glyph>(strBytes.Length * 2, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
-                // NativeHashSet<int> glyphSet;
-                // unsafe
-                // {
-                //     fixed (byte* ptr = strBytes)
-                //     {
-                //         FontLibrary.ShapeText(libCtx, fontIndex, (IntPtr)ptr, strBytes.Length, 1024, (IntPtr)buf.GetUnsafePtr(), out var glyphCount);
-                //         Debug.Log($"Glyph Count: {glyphCount}");
+                for (int i = 0; i < glyphsBuffer.Count(); i++)
+                {
+                    var glyph = glyphsBuffer[i];
+                    Debug.Log($"Glyph {i}: {glyph.CodePoint} {glyph.XOffset} {glyph.YOffset} {glyph.XAdvance} {glyph.YAdvance}");
+                }
 
-                //         glyphSet = new NativeHashSet<int>(glyphCount, Allocator.Temp);
-                //         for (var i = 0; i < glyphCount; i++)
-                //         {
-                //             var glyph = buf[i];
-                //             glyphSet.Add(glyph.CodePoint);
-                //         }
-                //     }
-                // }
-
-                // glyphSet.Dispose();
-                // buf.Dispose();
+                stringBuffer.Dispose();
+                textureBuffer.Dispose();
+                glyphsBuffer.Dispose();
             }
 
             public void ClearTexture()
@@ -157,7 +148,7 @@ namespace Elfenlabs.Text.Editor
                     DestroyImmediate(self.Texture);
                 }
 
-                var texture = new Texture2D(512, 512, TextureFormat.RGBA32, false);
+                var texture = new Texture2D(self.AtlasSize, self.AtlasSize, TextureFormat.RGBA32, false);
                 var rawColors = texture.GetRawTextureData<Color32>();
                 for (var i = 0; i < rawColors.Length; i++)
                 {

@@ -20,6 +20,7 @@ enum Allocator : std::int32_t
 };
 
 typedef void *(*AllocCallback)(int size, int alignment, Allocator allocator);
+typedef void (*DisposeCallback)(void *ptr, Allocator allocator);
 
 /// @brief Unmanaged general-purpose buffer intended for use with C APIs
 /// @tparam T
@@ -35,7 +36,20 @@ public:
         this->ptr = ptr;
     }
 
+    Buffer<T>()
+    {
+        this->ptr = nullptr;
+        this->sizeBytes = 0;
+        this->allocator = Allocator::Invalid;
+    }
+
     static_assert(std::is_trivially_copyable<T>::value, "T must be a trivially copyable type");
+
+    void Push(const T &value)
+    {
+        Resize(Count() + 1);
+        Data()[Count() - 1] = value;
+    }
 
     /// @brief Disposes the buffer
     void Dispose()
@@ -71,12 +85,12 @@ public:
         return (Buffer<K> *)this;
     }
 
-    int32_t Size()
+    const int32_t Count()
     {
         return sizeBytes / sizeof(T);
     }
 
-    int32_t SizeInBytes()
+    const int32_t SizeInBytes()
     {
         return sizeBytes;
     }
@@ -102,6 +116,12 @@ public:
         assert(index * sizeof(T) < sizeBytes);
         return ((T *)ptr)[index];
     }
+
+    // Iterator support
+    T *begin() { return Data(); }
+    T *end() { return Data() + Count(); }
+    const T *begin() const { return Data(); }
+    const T *end() const { return Data() + Count(); }
 
 private:
     void *ptr;

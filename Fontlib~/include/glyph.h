@@ -13,6 +13,13 @@ namespace Text
         int32_t xAdvance;
         int32_t yAdvance;
     };
+
+    /// @brief Glyph index paired with its bounding rectangle within the atlas
+    struct GlyphRect
+    {
+        int index;
+        int x, y, w, h;
+    };
 }
 
 #endif

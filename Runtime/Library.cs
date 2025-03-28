@@ -38,12 +38,16 @@ namespace Elfenlabs.Text
         public delegate IntPtr AllocCallback(int size, int alignment, Allocator allocator);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void DisposeCallback(IntPtr ptr, Allocator allocator);
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void UnityLogCallback(string message);
 
         [DllImport("fontlib", CallingConvention = CallingConvention.Cdecl)]
         public static extern ErrorCode CreateContext(
             UnityLogCallback logCallback,
             AllocCallback allocCallback,
+            DisposeCallback disposeCallback,
             out IntPtr ctx
         );
 
@@ -76,11 +80,13 @@ namespace Elfenlabs.Text
         public static extern ErrorCode DrawAtlas(
             IntPtr ctx,
             int fontIndex,
-            IntPtr text,
-            int textLen,
             int textureSize,
-            int pixelSize,
-            IntPtr outTexture
+            int glyphSize,
+            int padding,
+            Allocator allocator,
+            in NativeBuffer<byte> inText,
+            ref NativeBuffer<Color32> refTexture,
+            out NativeBuffer<Glyph> outGlyphs
         );
 
         [DllImport("fontlib", CallingConvention = CallingConvention.Cdecl)]
@@ -101,6 +107,15 @@ namespace Elfenlabs.Text
             unsafe
             {
                 return (IntPtr)UnsafeUtility.Malloc(size, alignment, allocator);
+            }
+        }
+
+        [AOT.MonoPInvokeCallback(typeof(AllocCallback))]
+        public static void UnityDisposer(IntPtr ptr, Allocator allocator)
+        {
+            unsafe
+            {
+                UnsafeUtility.Free((void*)ptr, allocator);
             }
         }
     }

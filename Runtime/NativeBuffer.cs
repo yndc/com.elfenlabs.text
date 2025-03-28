@@ -15,9 +15,28 @@ namespace Elfenlabs.Text
     [StructLayout(LayoutKind.Sequential, Pack = 8)]
     public struct NativeBuffer<T> where T : unmanaged
     {
-        private readonly IntPtr ptr;
-        private readonly Allocator allocator;
-        private readonly int size;
+        private IntPtr ptr;
+        private Allocator allocator;
+        private int size;
+
+        /// <summary>
+        /// Create a NativeBuffer from a NativeArray.
+        /// </summary>
+        /// <param name="array"></param>
+        /// <returns></returns>
+        public static NativeBuffer<T> FromArray(NativeArray<T> array)
+        {
+            unsafe
+            {
+                var buffer = new NativeBuffer<T>
+                {
+                    size = array.Length * UnsafeUtility.SizeOf<T>(),
+                    allocator = Allocator.Invalid,
+                    ptr = (IntPtr)array.GetUnsafeReadOnlyPtr()
+                };
+                return buffer;
+            }
+        }
 
         public static NativeBuffer<byte> FromString(string str, Allocator allocator)
         {
@@ -80,6 +99,10 @@ namespace Elfenlabs.Text
 
         public readonly void Dispose()
         {
+            if (allocator == Allocator.Invalid)
+            {
+                return;
+            }
             unsafe
             {
                 UnsafeUtility.Free((void*)ptr, allocator);
@@ -88,6 +111,10 @@ namespace Elfenlabs.Text
 
         public unsafe JobHandle Dispose(JobHandle inputDeps)
         {
+            if (allocator == Allocator.Invalid)
+            {
+                return inputDeps;
+            }
             var job = new BufferDisposalJob
             {
                 Ptr = ptr,

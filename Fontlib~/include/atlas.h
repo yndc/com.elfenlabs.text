@@ -2,15 +2,12 @@
 #define ATLAS_H
 
 #include <algorithm>
+#include <vector>
+#include <glyph.h>
+#include <buffer.h>
 
 namespace Text
 {
-    struct GlyphRect
-    {
-        int index;
-        int x, y, w, h;
-    };
-
     struct Row
     {
         int height;
@@ -30,32 +27,28 @@ namespace Text
     class AtlasBuilder
     {
     public:
-        AtlasBuilder(int size) : size(size) {}
-        ~AtlasBuilder();
+        AtlasBuilder(int size, int padding) : size(size), padding(padding) {}
 
-        /// @brief Add multiple rectangles to the atlas
-        /// @param w widths of the rectangles
-        /// @param h heights of the rectangles
-        /// @param count number of rectangles to add
-        /// @return number of rectangles added
-        int Add(std::vector<GlyphRect> &items)
+        /// @brief Builds an atlas for the given items
+        /// @param items
+        /// @return
+        int Build(Buffer<GlyphRect> glyphs)
         {
-            if (items.empty())
-                return 0;
-
             // Sort items by height descending
-            std::sort(items.begin(), items.end(), [](const GlyphRect &a, const GlyphRect &b)
+            std::sort(glyphs.begin(), glyphs.end(), [](const GlyphRect &a, const GlyphRect &b)
                       { return a.h > b.h; });
 
             // Wrap items into rows
             rows.push_back(Row());
             auto row = 0;
             auto totalHeight = 0;
-            for (auto &item : items)
+            for (auto &glyph : glyphs)
             {
-                if (rows[row].width + item.w > this->size)
+                glyph.w = glyph.w + padding;
+                glyph.h = glyph.h + padding;
+                if (rows[row].width + glyph.w > this->size)
                 {
-                    if (totalHeight + rows[row].height + item.h > this->size)
+                    if (totalHeight + rows[row].height + glyph.h > this->size)
                     {
                         return -1; // Atlas is full
                     }
@@ -63,11 +56,11 @@ namespace Text
                     rows.push_back(Row());
                     row++;
                 }
-                item.x = rows[row].width;
-                item.y = totalHeight;
-                rows[row].width += item.w;
-                rows[row].height = std::max(rows[row].height, item.h);
-                rows[row].items.push_back(item);
+                glyph.x = rows[row].width;
+                glyph.y = totalHeight;
+                rows[row].width += glyph.w;
+                rows[row].height = std::max(rows[row].height, glyph.h);
+                rows[row].items.push_back(glyph);
             }
 
             // If we reached this far, this means that the items fit into the atlas.
@@ -76,15 +69,11 @@ namespace Text
             return 0;
         }
 
-    protected:
+    private:
         int size;
+        int padding;
         std::vector<Row> rows;
     };
-
-    /// @brief Get a list of unique glyphs from a string
-    /// @param str
-    /// @return
-    std::vector<GlyphRect> GetUniqueGlyphs(std::string str);
 }
 
 // For each row, sort items by width
@@ -112,30 +101,6 @@ namespace Text
 //             j--;
 //         }
 //     }
-// }
-
-// std::vector<GlyphRect> GetUniqueGlyphs(Context* ctx, int fontIndex, std::string str)
-// {
-//     // Shape the text to get the glyphs
-//     int glyphCount;
-
-//     ctx->ShapeText(fontIndex, text, textLen, maxGlyphs, shapingResult, &glyphCount);
-
-//     context->Log() << "Atlas character set: " << std::string(text, textLen);
-
-//     // Extract unique glyph indices
-//     auto glyphIndexSet = std::set<int>();
-//     for (int i = 0; i < glyphCount; ++i)
-//     {
-//         glyphIndexSet.insert(shapingResult[i].codePoint);
-//     }
-
-//     auto glyphs = std::vector<Text::GlyphRect>();
-//     for (auto glyphIndex : glyphIndexSet)
-//     {
-//         glyphs.push_back({glyphIndex, 0, 0, 0, 0});
-//     }
-//     context->Log() << "Unique glyph count: " << glyphs.size();
 // }
 
 #endif

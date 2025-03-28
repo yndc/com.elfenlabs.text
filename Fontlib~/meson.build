@@ -20,7 +20,7 @@ harfbuzz_dep = declare_dependency(
 # msdfgen CMake subproject
 msdfgen_subproject = cmake.subproject('msdfgen',
     cmake_options: [
-        '-DMSDFGEN_CORE_ONLY=ON',
+        '-DMSDFGEN_CORE_ONLY=OFF',
         '-DMSDFGEN_BUILD_STANDALONE=OFF',
         '-DMSDFGEN_USE_VCPKG=OFF',
         '-DMSDFGEN_USE_OPENMP=OFF',
@@ -39,9 +39,22 @@ msdfgen_core_dep = declare_dependency(
   include_directories: include_directories([
     'subprojects/msdfgen',
     'subprojects/msdfgen/core',
+    'subprojects/msdfgen/ext',
     'subprojects/msdfgen/__CMake_build'
   ])
 )
+
+msdfgen_ext_lib = msdfgen_subproject.target('msdfgen-ext')
+msdfgen_ext_dep = declare_dependency(
+  link_with: msdfgen_ext_lib,
+  include_directories: include_directories([
+    'subprojects/msdfgen',
+    'subprojects/msdfgen/core',
+    'subprojects/msdfgen/ext',
+    'subprojects/msdfgen/__CMake_build'
+  ])
+)
+
 msdfgen_config_src = meson.current_build_dir() / 'subprojects' / 'msdfgen' / '__CMake_build' / 'msdfgen-config.h'
 msdfgen_config_dst_dir = meson.current_build_dir() / 'subprojects' / 'msdfgen' / 'msdfgen'
 run_command('python', '-c', 
@@ -82,7 +95,7 @@ src_files = [
 fontlib = shared_library('fontlib',
     src_files,
     include_directories : inc_dirs,
-    dependencies: [freetype_dep, harfbuzz_dep, msdfgen_core_dep, clipper_dep],
+    dependencies: [freetype_dep, harfbuzz_dep, msdfgen_core_dep, msdfgen_ext_dep, clipper_dep],
     c_args : ['-fvisibility=hidden'],
     cpp_args : ['-fvisibility=hidden'],
     link_args : ['-fvisibility=hidden'],
