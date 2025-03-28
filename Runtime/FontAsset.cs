@@ -3,6 +3,8 @@ using System;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using System.Text;
+using System.Collections.Generic;
+
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -13,17 +15,21 @@ namespace Elfenlabs.Text.Editor
     [CreateAssetMenu(fileName = "MSDF Font", menuName = "MSDF Font")]
     public class FontAsset : ScriptableObject
     {
+        [Header("Font")]
         public Font Font;
 
-        public Texture2D Texture;
-
-        public CharacterPreset BakeCharacterPresets;
-
-        public int GlyphSize = 32;
-
+        [Header("Atlas Settings")]
         public int AtlasSize = 512;
-
+        public int GlyphSize = 32;
         public int Padding = 2;
+
+        [Header("Character Set")]
+        public List<UnicodeRange> UnicodeRanges;
+        public List<string> UnicodeSamples;
+        public List<string> Ligatures;
+
+        [Header("Result")]
+        public Texture2D Texture;
 
 #if UNITY_EDITOR
         [CustomEditor(typeof(FontAsset))]
@@ -104,16 +110,21 @@ namespace Elfenlabs.Text.Editor
                 ClearTexture();
 
                 // Prepare character set for generation
-                var charsetBuilder = new CharacterSetBuilder().WithPreset(CharacterPreset.Latin);
+                var charsetBuilder = new CharacterSetBuilder();
+                for (int i = 0; i < self.UnicodeRanges.Count; i++)
+                    charsetBuilder.Add(self.UnicodeRanges[i]);
+                for (int i = 0; i < self.UnicodeSamples.Count; i++)
+                    charsetBuilder.Add(self.UnicodeSamples[i]);
+                for (int i = 0; i < self.Ligatures.Count; i++)
+                    charsetBuilder.Add(self.Ligatures[i]);
                 var str = charsetBuilder.ToString();
-                var stringBuffer = NativeBuffer<byte>.FromString(str, Allocator.Temp);
                 Debug.Log("String: " + str);
 
                 // Generate the atlas 
+                var stringBuffer = NativeBuffer<byte>.FromString(str, Allocator.Temp);
                 var texture = self.Texture;
                 var fontIndex = LoadFont();
                 var textureBuffer = NativeBuffer<Color32>.FromArray(texture.GetRawTextureData<Color32>());
-                NativeBuffer<Glyph> glyphsBuffer;
                 FontLibrary.DrawAtlas(
                     libCtx,
                     fontIndex,
@@ -123,7 +134,7 @@ namespace Elfenlabs.Text.Editor
                     Allocator.Temp,
                     in stringBuffer,
                     ref textureBuffer,
-                    out glyphsBuffer
+                    out NativeBuffer<Glyph> glyphsBuffer
                 );
                 texture.Apply();
                 EditorUtility.SetDirty(target);
