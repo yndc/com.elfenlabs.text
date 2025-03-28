@@ -44,8 +44,8 @@ namespace Text
             auto totalHeight = 0;
             for (auto &glyph : glyphs)
             {
-                glyph.w = glyph.w + padding;
-                glyph.h = glyph.h + padding;
+                glyph.w = glyph.w + padding * 2;
+                glyph.h = glyph.h + padding * 2;
                 if (rows[row].width + glyph.w > this->size)
                 {
                     if (totalHeight + rows[row].height + glyph.h > this->size)
