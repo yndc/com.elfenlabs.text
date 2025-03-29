@@ -17,6 +17,15 @@ namespace Elfenlabs.Text
         FontNotFound = 1000
     }
 
+    enum AtlasCompactFlags : int
+    {
+        None = 0,
+        FillEnd = 1 << 0,
+        Gravity = 1 << 1,
+        ZigZag = 1 << 2,
+    }
+
+    [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     public struct Glyph
     {
@@ -83,6 +92,7 @@ namespace Elfenlabs.Text
             int textureSize,
             int glyphSize,
             int padding,
+            int compactFlags,
             Allocator allocator,
             in NativeBuffer<byte> inText,
             ref NativeBuffer<Color32> refTexture,

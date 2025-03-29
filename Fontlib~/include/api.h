@@ -2,7 +2,7 @@
 #define API_H
 
 #include <set>
-#include "types.h"
+#include "base.h"
 #include "error.h"
 #include "context.h"
 #include "shape.h"
@@ -80,6 +80,7 @@ EXPORT_DLL DrawAtlas(
     int textureSize,                 // Texture size
     int glyphSize,                   // Glyph size in pixels
     int padding,                     // Padding between glyphs
+    int compactFlags,                // Compact flags
     Allocator allocator,             // Allocator for the output glyph rects
     Buffer<char> *inText,            // Text to shape
     Buffer<RGBA32Pixel> *refTexture, // Output texture pointer
@@ -92,6 +93,7 @@ EXPORT_DLL DrawAtlas(
         textureSize,
         glyphSize,
         padding,
+        compactFlags,
         allocator,
         inText,
         refTexture,

@@ -1,8 +1,8 @@
 #ifndef CONTEXT_H
 #define CONTEXT_H
 
+#include "base.h"
 #include <stdint.h>
-#include "types.h"
 #include "atlas.h"
 #include "buffer.h"
 #include "shape.h"
@@ -155,6 +155,7 @@ namespace Text
             int textureSize,
             int glyphSize,
             int padding,
+            int compactFlags,
             Allocator allocator,
             Buffer<char> *inText,
             Buffer<RGBA32Pixel> *refTexture,
@@ -179,8 +180,9 @@ namespace Text
             }
 
             // Prepare the atlas
-            auto atlas = AtlasBuilder(textureSize, padding);
-            auto atlasResult = atlas.Build(glyphs);
+            auto atlasConfig = AtlasConfig{textureSize, padding, compactFlags};
+            auto atlas = AtlasBuilder(atlasConfig, glyphs);
+            auto atlasResult = atlas.Build();
 
             // Draw the atlas
             for (int i = 0; i < glyphs.Count(); i++)

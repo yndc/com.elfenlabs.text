@@ -1,10 +1,7 @@
 using UnityEngine;
 using System;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
-using System.Text;
 using System.Collections.Generic;
-
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -22,6 +19,7 @@ namespace Elfenlabs.Text.Editor
         public int AtlasSize = 512;
         public int GlyphSize = 32;
         public int Padding = 2;
+        AtlasCompactFlags CompactFlags = AtlasCompactFlags.None;
 
         [Header("Character Set")]
         public List<UnicodeRange> UnicodeRanges;
@@ -30,6 +28,9 @@ namespace Elfenlabs.Text.Editor
 
         [Header("Result")]
         public Texture2D Texture;
+
+        [ReadOnly]
+        public List<Glyph> GlyphRects;
 
 #if UNITY_EDITOR
         [CustomEditor(typeof(FontAsset))]
@@ -43,6 +44,14 @@ namespace Elfenlabs.Text.Editor
                 DrawDefaultInspector();
 
                 self = (FontAsset)target;
+
+                if (self.Font == null)
+                {
+                    EditorGUILayout.HelpBox("Font is not set.", MessageType.Warning);
+                    return;
+                }
+
+                self.CompactFlags = (AtlasCompactFlags)EditorGUILayout.EnumFlagsField("Compact Flags", self.CompactFlags);
 
                 if (GUILayout.Button("Shape Test"))
                 {
@@ -131,6 +140,7 @@ namespace Elfenlabs.Text.Editor
                     texture.width,
                     self.GlyphSize,
                     self.Padding,
+                    (int)self.CompactFlags,
                     Allocator.Temp,
                     in stringBuffer,
                     ref textureBuffer,
@@ -140,12 +150,14 @@ namespace Elfenlabs.Text.Editor
                 EditorUtility.SetDirty(target);
                 AssetDatabase.SaveAssets();
 
+                // Serialize the glyph mapping result
+                self.GlyphRects = new List<Glyph>(glyphsBuffer.Count());
                 for (int i = 0; i < glyphsBuffer.Count(); i++)
                 {
-                    var glyph = glyphsBuffer[i];
-                    Debug.Log($"Glyph {i}: {glyph.CodePoint} {glyph.XOffset} {glyph.YOffset} {glyph.XAdvance} {glyph.YAdvance}");
+                    self.GlyphRects.Add(glyphsBuffer[i]);
                 }
 
+                // Cleanup buffers
                 stringBuffer.Dispose();
                 textureBuffer.Dispose();
                 glyphsBuffer.Dispose();
