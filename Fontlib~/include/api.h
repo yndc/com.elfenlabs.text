@@ -80,6 +80,8 @@ EXPORT_DLL DrawAtlas(
     int textureSize,                 // Texture size
     int glyphSize,                   // Glyph size in pixels
     int padding,                     // Padding between glyphs
+    float distanceMappingRange,      // Distance mapping range
+    int glyphRenderFlags,            // Glyph render flags
     int compactFlags,                // Compact flags
     Allocator allocator,             // Allocator for the output glyph rects
     Buffer<char> *inText,            // Text to shape
@@ -93,6 +95,8 @@ EXPORT_DLL DrawAtlas(
         textureSize,
         glyphSize,
         padding,
+        distanceMappingRange,
+        glyphRenderFlags,
         compactFlags,
         allocator,
         inText,

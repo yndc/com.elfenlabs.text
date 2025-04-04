@@ -155,6 +155,8 @@ namespace Text
             int textureSize,
             int glyphSize,
             int padding,
+            float distanceMappingRange,
+            int glyphRenderFlags,
             int compactFlags,
             Allocator allocator,
             Buffer<char> *inText,
@@ -192,7 +194,7 @@ namespace Text
                 Log() << "Drawing Glyph " << glyph.index << " rect: " << glyph.x << ", " << glyph.y << ", " << glyph.w << ", " << glyph.h;
 
                 // Draw the glyph
-                DrawGlyph(face, glyph, textureSize, glyphSize, padding, refTexture);
+                DrawGlyph(face, glyph, textureSize, glyphSize, padding, distanceMappingRange, glyphRenderFlags, refTexture);
             }
 
             *outGlyphRects = glyphs;

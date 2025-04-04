@@ -17,6 +17,13 @@ namespace Elfenlabs.Text
         FontNotFound = 1000
     }
 
+    enum GlyphRenderFlags : int
+    {
+        None = 0,
+        ResolveIntersection = 1 << 0,
+        Test = 1 << 1,
+    }
+
     enum AtlasCompactFlags : int
     {
         None = 0,
@@ -92,6 +99,8 @@ namespace Elfenlabs.Text
             int textureSize,
             int glyphSize,
             int padding,
+            float distanceMappingRange,
+            int glyphRenderFlags,
             int compactFlags,
             Allocator allocator,
             in NativeBuffer<byte> inText,

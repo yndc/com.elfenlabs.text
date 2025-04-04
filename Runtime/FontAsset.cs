@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using UnityEditor;
 #endif
 
-namespace Elfenlabs.Text.Editor
+namespace Elfenlabs.Text
 {
     [CreateAssetMenu(fileName = "MSDF Font", menuName = "MSDF Font")]
     public class FontAsset : ScriptableObject
@@ -19,6 +19,8 @@ namespace Elfenlabs.Text.Editor
         public int AtlasSize = 512;
         public int GlyphSize = 32;
         public int Padding = 2;
+        public float DistanceMappingRange = 0.5f;
+        GlyphRenderFlags GlyphRenderFlags = GlyphRenderFlags.None;
         AtlasCompactFlags CompactFlags = AtlasCompactFlags.None;
 
         [Header("Character Set")]
@@ -27,7 +29,7 @@ namespace Elfenlabs.Text.Editor
         public List<string> Ligatures;
 
         [Header("Result")]
-        public Texture2D Texture;
+        public Texture2DArray Texture;
 
         [ReadOnly]
         public List<Glyph> GlyphRects;
@@ -52,6 +54,7 @@ namespace Elfenlabs.Text.Editor
                 }
 
                 self.CompactFlags = (AtlasCompactFlags)EditorGUILayout.EnumFlagsField("Compact Flags", self.CompactFlags);
+                self.GlyphRenderFlags = (GlyphRenderFlags)EditorGUILayout.EnumFlagsField("Glyph Render Flags", self.GlyphRenderFlags);
 
                 if (GUILayout.Button("Shape Test"))
                 {
@@ -133,13 +136,15 @@ namespace Elfenlabs.Text.Editor
                 var stringBuffer = NativeBuffer<byte>.FromString(str, Allocator.Temp);
                 var texture = self.Texture;
                 var fontIndex = LoadFont();
-                var textureBuffer = NativeBuffer<Color32>.FromArray(texture.GetRawTextureData<Color32>());
+                var textureBuffer = NativeBuffer<Color32>.FromArray(texture.GetPixelData<Color32>(0, 0));
                 FontLibrary.DrawAtlas(
                     libCtx,
                     fontIndex,
                     texture.width,
                     self.GlyphSize,
                     self.Padding,
+                    self.DistanceMappingRange,
+                    (int)self.GlyphRenderFlags,
                     (int)self.CompactFlags,
                     Allocator.Temp,
                     in stringBuffer,
@@ -171,18 +176,18 @@ namespace Elfenlabs.Text.Editor
                     DestroyImmediate(self.Texture);
                 }
 
-                var texture = new Texture2D(self.AtlasSize, self.AtlasSize, TextureFormat.RGBA32, false);
-                var rawColors = texture.GetRawTextureData<Color32>();
+                var textureArray = new Texture2DArray(self.AtlasSize, self.AtlasSize, 1, TextureFormat.RGBA32, false);
+                var rawColors = textureArray.GetPixelData<Color32>(0, 0);
                 for (var i = 0; i < rawColors.Length; i++)
                 {
                     rawColors[i] = new Color32(0, 0, 0, 0);
                 }
-                texture.name = "FontAtlas";
-                texture.Apply();
+                textureArray.name = "FontAtlas";
+                textureArray.Apply();
 
-                self.Texture = texture;
+                self.Texture = textureArray;
                 EditorUtility.SetDirty(target);
-                AssetDatabase.AddObjectToAsset(texture, self);
+                AssetDatabase.AddObjectToAsset(textureArray, self);
                 AssetDatabase.SaveAssets();
             }
 
