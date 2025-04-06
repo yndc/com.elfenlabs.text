@@ -34,13 +34,24 @@ namespace Elfenlabs.Text
 
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    public struct Glyph
+    public struct ShapingGlyph
     {
         public int CodePoint;
         public int XOffset;
         public int YOffset;
         public int XAdvance;
         public int YAdvance;
+    }
+
+    [Serializable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct GlyphRect
+    {
+        public int CodePoint;
+        public int X;
+        public int Y;
+        public int Width;
+        public int Height;
     }
 
     public static class FontLibrary
@@ -89,7 +100,7 @@ namespace Elfenlabs.Text
             int fontIndex,
             Allocator allocator,
             NativeBuffer<byte> text,
-            out NativeBuffer<Glyph> outGlyphs
+            out NativeBuffer<ShapingGlyph> outGlyphs
         );
 
         [DllImport("fontlib", CallingConvention = CallingConvention.Cdecl)]
@@ -105,7 +116,7 @@ namespace Elfenlabs.Text
             Allocator allocator,
             in NativeBuffer<byte> inText,
             ref NativeBuffer<Color32> refTexture,
-            out NativeBuffer<Glyph> outGlyphs
+            out NativeBuffer<GlyphRect> outGlyphs
         );
 
         [DllImport("fontlib", CallingConvention = CallingConvention.Cdecl)]

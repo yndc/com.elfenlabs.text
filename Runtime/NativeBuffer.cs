@@ -24,7 +24,7 @@ namespace Elfenlabs.Text
         /// </summary>
         /// <param name="array"></param>
         /// <returns></returns>
-        public static NativeBuffer<T> FromArray(NativeArray<T> array)
+        public static NativeBuffer<T> Alias(NativeArray<T> array)
         {
             unsafe
             {
@@ -42,6 +42,19 @@ namespace Elfenlabs.Text
         {
             var bytes = System.Text.Encoding.UTF8.GetBytes(str);
             return NativeBuffer<byte>.FromBytes(bytes, allocator);
+        }
+
+        public static NativeBuffer<byte> Alias(FixedString128Bytes str)
+        {
+            unsafe
+            {
+                return new NativeBuffer<byte>
+                {
+                    size = str.Length,
+                    allocator = Allocator.Invalid,
+                    ptr = (IntPtr)str.GetUnsafePtr()
+                };
+            }
         }
 
         public static NativeBuffer<byte> FromBytes(byte[] bytes, Allocator allocator)
