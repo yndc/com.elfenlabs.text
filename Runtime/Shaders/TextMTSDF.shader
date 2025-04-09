@@ -55,7 +55,8 @@ Shader "Elfenlabs/Text-MTSDF"
                 float texIndex : TEXCOORD1;
                 float4 color : COLOR0;
                 float4 outlineColor : COLOR1;
-                float outlineThickness : float;
+                float outlineThickness : float0;
+                float threshold : float1;
             };
 
             float median(float r, float g, float b) {
@@ -81,16 +82,27 @@ Shader "Elfenlabs/Text-MTSDF"
 
             TEXTURE2D_ARRAY(_MainTex);
             SAMPLER(sampler_MainTex);
+
             CBUFFER_START(UnityPerMaterial)
                 float _ScreenPxRange;
                 float _GlyphSmoothness;
                 float _GlyphSmoothnessScreenDistanceFactor;
                 float _GlyphThreshold;
+                float _GlyphAtlasIndex;
+                float4 _GlyphRect;
+                float4 _GlyphBaseColor;
+                float _GlyphOutlineThickness;
+                float4 _GlyphOutlineColor;
             CBUFFER_END
-
 
             // DOTS Instancing buffer
             #if defined(UNITY_DOTS_INSTANCING_ENABLED)
+                // CBUFFER_START(UnityPerMaterial)
+                //     float _ScreenPxRange;
+                //     float _GlyphSmoothness;
+                //     float _GlyphSmoothnessScreenDistanceFactor;
+                //     float _GlyphThreshold;
+                // CBUFFER_END
                 UNITY_DOTS_INSTANCING_START(UserPropertyMetadata)
                     UNITY_DOTS_INSTANCED_PROP(float, _GlyphAtlasIndex)
                     UNITY_DOTS_INSTANCED_PROP(float4, _GlyphRect)
@@ -98,36 +110,30 @@ Shader "Elfenlabs/Text-MTSDF"
                     UNITY_DOTS_INSTANCED_PROP(float, _GlyphOutlineThickness)
                     UNITY_DOTS_INSTANCED_PROP(float4, _GlyphOutlineColor)
                 UNITY_DOTS_INSTANCING_END(UserPropertyMetadata)
-            #else 
-                CBUFFER_START(UnityPerMaterial)
-                    float _GlyphAtlasIndex;
-                    float4 _GlyphRect;
-                    float4 _GlyphBaseColor;
-                    float _GlyphOutlineThickness;
-                    float4 _GlyphOutlineColor;
-                CBUFFER_END
+            #else
             #endif
 
             FragmentInput vert(VertexInput IN)
             {
+                UNITY_SETUP_INSTANCE_ID(IN);
                 FragmentInput OUT;
                 
-                float4x4 objectToWorld = GetObjectToWorldMatrix();
                 OUT.position = TransformObjectToHClip(IN.position.xyz);
 
                 #if defined(UNITY_DOTS_INSTANCING_ENABLED)
-                    UNITY_SETUP_INSTANCE_ID(IN);
                     float texIndex = UNITY_ACCESS_DOTS_INSTANCED_PROP(float, _GlyphAtlasIndex);
                     float4 uvRect = UNITY_ACCESS_DOTS_INSTANCED_PROP(float4, _GlyphRect);
                     float4 baseColor = UNITY_ACCESS_DOTS_INSTANCED_PROP(float4, _GlyphBaseColor);
                     float outlineThickness = UNITY_ACCESS_DOTS_INSTANCED_PROP(float, _GlyphOutlineThickness);
                     float4 outlineColor = UNITY_ACCESS_DOTS_INSTANCED_PROP(float4, _GlyphOutlineColor);
+                    float threshold = _GlyphThreshold;
                 #else 
                     float texIndex = _GlyphAtlasIndex;
                     float4 uvRect = _GlyphRect;
                     float4 baseColor = _GlyphBaseColor;
                     float outlineThickness = _GlyphOutlineThickness;
                     float4 outlineColor = _GlyphOutlineColor;
+                    float threshold = _GlyphThreshold;
                 #endif
 
                 OUT.uv = IN.uv * (uvRect.zw) + uvRect.xy;
@@ -135,6 +141,7 @@ Shader "Elfenlabs/Text-MTSDF"
                 OUT.color = baseColor;
                 OUT.outlineThickness = outlineThickness;
                 OUT.outlineColor = outlineColor;
+                OUT.threshold = threshold;
 
                 return OUT;
             }
@@ -146,7 +153,7 @@ Shader "Elfenlabs/Text-MTSDF"
                 float screenDistance = getScreenRange(_GlyphSmoothnessScreenDistanceFactor, IN.uv, 512);
 
                 // Compute opacity with smooth transition
-                float threshold = _GlyphThreshold;
+                float threshold = IN.threshold;
                 float cap = min(threshold, 1 - threshold);
                 float smoothness = cap * _GlyphSmoothness;// * saturate(screenDistance);
 
