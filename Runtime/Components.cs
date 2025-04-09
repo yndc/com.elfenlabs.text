@@ -2,71 +2,47 @@ using Unity.Entities;
 using Unity.Rendering;
 using Unity.Mathematics;
 using Unity.Collections;
-using UnityEngine;
-using Elfenlabs.Registry;
-using System;
-using Elfenlabs.Mesh;
 
 namespace Elfenlabs.Text
 {
-    public struct FontAssetResource : ISharedComponentData, IEquatable<FontAssetResource>
+    public struct TextBufferData : IBufferElementData
     {
-        public BlobAssetReference<FontBlobAsset> BlobAsset;
-        public Material Material;
-        public NativeHashMap<int, float4> GlyphRectMap;
-
-        public FontAssetResource(BlobAssetReference<FontBlobAsset> blobAsset, Material material)
-        {
-            BlobAsset = blobAsset;
-            Material = material;
-            GlyphRectMap = default;
-        }
-
-        public void Initialize(EntityManager entityManager)
-        {
-            GlyphRectMap = BlobAsset.Value.GlyphRectMap.Deserialize(Allocator.Persistent);
-        }
-
-        public void Dispose()
-        {
-            GlyphRectMap.Dispose();
-            BlobAsset.Dispose();
-        }
-
-        public bool Equals(FontAssetResource other)
-        {
-            return BlobAsset.Equals(other.BlobAsset) && Material == other.Material;
-        }
-
-        public override int GetHashCode()
-        {
-            return HashCode.Combine(BlobAsset.GetHashCode(), Material.GetHashCode());
-        }
+        public byte Value;
+        public static implicit operator TextBufferData(byte value) => new TextBufferData { Value = value };
+        public static implicit operator byte(TextBufferData textBuffer) => textBuffer.Value;
     }
 
-    public struct TextStringConfig : IComponentData
+    public struct TextShapedTag : IComponentData
     {
-        public FixedString128Bytes Value;
+
     }
 
-    public struct TextFontConfig : ISharedComponentData
-    {
-        public int FontIndex;
-    }
-
-    public struct TextStringState : IComponentData
-    {
-        public FixedString128Bytes Value;
-    }
-
-    [MaterialProperty("_TextureIndex")]
-    public struct GlyphTextureIndex : IComponentData
+    [MaterialProperty("_GlyphAtlasIndex")]
+    public struct MaterialPropertyGlyphAtlasIndex : IComponentData
     {
         public int Value;
     }
 
-    [MaterialProperty("_TextureRect")]
-    public struct GlyphTextureRect : IComponentData
+    [MaterialProperty("_GlyphRect")]
+    public struct MaterialPropertyGlyphRect : IComponentData
+    {
+        public float4 Value;
+    }
+
+    [MaterialProperty("_GlyphBaseColor")]
+    public struct MaterialPropertyGlyphBaseColor : IComponentData
+    {
+        public float4 Value;
+    }
+
+    [MaterialProperty("_GlyphOutlineThickness")]
+    public struct MaterialPropertyGlyphOutlineThickness : IComponentData
+    {
+        public float Value;
+    }
+
+    [MaterialProperty("_GlyphOutlineColor")]
+    public struct MaterialPropertyGlyphOutlineColor : IComponentData
     {
         public float4 Value;
     }

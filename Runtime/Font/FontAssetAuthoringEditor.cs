@@ -1,9 +1,11 @@
-using UnityEngine;
 using System;
-using Unity.Collections;
 using System.Collections.Generic;
+using Unity.Collections;
 using Unity.Mathematics;
 using Unity.Entities;
+using UnityEngine;
+using Elfenlabs.Collections;
+
 
 
 #if UNITY_EDITOR
@@ -12,76 +14,18 @@ using UnityEditor;
 
 namespace Elfenlabs.Text
 {
-    [CreateAssetMenu(fileName = "MSDF Font", menuName = "MSDF Font")]
-    public class FontAsset : ScriptableObject
-    {
-        [Header("Font")]
-        public Font Font;
-
-        [Header("Atlas Settings")]
-        public int AtlasSize = 512;
-        public int GlyphSize = 32;
-        public int Padding = 2;
-        public float DistanceMappingRange = 0.5f;
-        GlyphRenderFlags GlyphRenderFlags = GlyphRenderFlags.None;
-        AtlasCompactFlags CompactFlags = AtlasCompactFlags.None;
-
-        [Header("Character Set")]
-        public List<UnicodeRange> UnicodeRanges;
-        public List<string> UnicodeSamples;
-        public List<string> Ligatures;
-
-        [Header("Result")]
-        public Texture2DArray Texture;
-
-        [ReadOnly]
-        public List<GlyphRect> GlyphRects;
-
-        public Material Material;
-
-        public FontAssetResource CreateAssetResource(Allocator allocator)
-        {
-            var builder = new BlobBuilder(Allocator.Temp);
-            ref FontBlobAsset fontBlob = ref builder.ConstructRoot<FontBlobAsset>();
-            builder.AllocateString(ref fontBlob.Name, Font.name);
-
-            var map = new NativeHashMap<int, float4>(GlyphRects.Count, Allocator.Temp);
-            for (int i = 0; i < GlyphRects.Count; i++)
-            {
-                var glyph = GlyphRects[i];
-
-                // Convert pixel coordinates to UV coordinates
-                var uv = new float4(
-                    glyph.X / Texture.width,
-                    glyph.Y / Texture.height,
-                    glyph.Width / Texture.width,
-                    glyph.Height / Texture.height
-                );
-
-                map.Add(glyph.CodePoint, uv);
-            }
-
-            fontBlob.GlyphRectMap.Serialize(builder, map);
-            var blobRef = builder.CreateBlobAssetReference<FontBlobAsset>(allocator);
-
-            builder.Dispose();
-            map.Dispose();
-
-            return new FontAssetResource(blobRef, Material);
-        }
-
 #if UNITY_EDITOR
-        [CustomEditor(typeof(FontAsset))]
+        [CustomEditor(typeof(FontAssetAuthoring))]
         public class FontAssetEditor : UnityEditor.Editor
         {
-            FontAsset self;
+            FontAssetAuthoring self;
             IntPtr libCtx;
 
             public override void OnInspectorGUI()
             {
                 DrawDefaultInspector();
 
-                self = (FontAsset)target;
+                self = (FontAssetAuthoring)target;
 
                 if (self.Font == null)
                 {
@@ -260,42 +204,4 @@ namespace Elfenlabs.Text
             }
         }
 #endif
-    }
-
-    public struct SerializedHashMap<K, T>
-        where T : unmanaged
-        where K : unmanaged, IEquatable<K>
-    {
-        public BlobArray<K> Keys;
-        public BlobArray<T> Values;
-        public void Serialize(BlobBuilder builder, NativeHashMap<K, T> map)
-        {
-            BlobBuilderArray<K> keys = builder.Allocate(ref Keys, map.Count);
-            BlobBuilderArray<T> values = builder.Allocate(ref Values, map.Count);
-
-            int i = 0;
-            foreach (var kvp in map)
-            {
-                keys[i] = kvp.Key;
-                values[i] = kvp.Value;
-                i++;
-            }
-        }
-
-        public NativeHashMap<K, T> Deserialize(Allocator allocator)
-        {
-            var map = new NativeHashMap<K, T>(Keys.Length, allocator);
-            for (int i = 0; i < Keys.Length; i++)
-            {
-                map.Add(Keys[i], Values[i]);
-            }
-            return map;
-        }
-    }
-
-    public struct FontBlobAsset
-    {
-        public BlobString Name;
-        public SerializedHashMap<int, float4> GlyphRectMap;
-    }
 }

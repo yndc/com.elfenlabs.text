@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using Elfenlabs.Collections;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
@@ -17,14 +18,14 @@ namespace Elfenlabs.Text
         FontNotFound = 1000
     }
 
-    enum GlyphRenderFlags : int
+    public enum GlyphRenderFlags : int
     {
         None = 0,
         ResolveIntersection = 1 << 0,
         Test = 1 << 1,
     }
 
-    enum AtlasCompactFlags : int
+    public enum AtlasCompactFlags : int
     {
         None = 0,
         FillEnd = 1 << 0,

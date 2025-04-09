@@ -1,15 +1,32 @@
 using UnityEngine;
 using Unity.Entities;
 using Unity.Collections;
-using Unity.Entities.Serialization;
+using Elfenlabs.String;
+using System;
+using Unity.Transforms;
 
 namespace Elfenlabs.Text
 {
     public class TextMeshAuthoring : MonoBehaviour
     {
-        public FontAsset Font;
+        public FontAssetAuthoring Font;
 
         public string Text;
+    }
+
+    public struct FontAssetPreBakeReference : ISharedComponentData, IEquatable<FontAssetPreBakeReference>
+    {
+        public FontAssetAuthoring Value;
+
+        public readonly bool Equals(FontAssetPreBakeReference other)
+        {
+            return Value == other.Value;
+        }
+
+        public readonly override int GetHashCode()
+        {
+            return Value.GetHashCode();
+        }
     }
 
     public class TextMeshAuthoringBaker : Baker<TextMeshAuthoring>
@@ -19,10 +36,10 @@ namespace Elfenlabs.Text
             DependsOn(authoring.Font);
 
             var entity = GetEntity(TransformUsageFlags.Dynamic);
-            var config = authoring.Font.CreateAssetResource(Allocator.Persistent);
-
-            AddComponent(entity, new TextStringConfig { Value = authoring.Text });
-            AddSharedComponentManaged(entity, config);
+            var buffer = AddBuffer<TextBufferData>(entity);
+            StringUtility.CopyToDynamicBuffer(authoring.Text, buffer);
+            AddSharedComponentManaged(entity, new FontAssetPreBakeReference { Value = authoring.Font });
+            AddComponent(entity, new Parent());
         }
     }
 }
