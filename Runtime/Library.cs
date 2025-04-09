@@ -35,6 +35,21 @@ namespace Elfenlabs.Text
 
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
+    public readonly struct FontDescription
+    {
+        public readonly IntPtr Handle;
+        public readonly int UnitsPerEM;
+        public readonly int Ascender;
+        public readonly int Descender;
+        public readonly int Height;
+        public readonly int MaxAdvanceWidth;
+        public readonly int MaxAdvanceHeight;
+        public readonly int UnderlinePosition;
+        public readonly int UnderlineThickness;
+    }
+
+    [Serializable]
+    [StructLayout(LayoutKind.Sequential)]
     public struct ShapingGlyph
     {
         public int CodePoint;
@@ -86,19 +101,19 @@ namespace Elfenlabs.Text
         public static extern ErrorCode LoadFont(
             IntPtr ctx,
             NativeBuffer<byte> fontData,
-            out int fontIndex
+            out FontDescription fontDescription
         );
 
         [DllImport("fontlib", CallingConvention = CallingConvention.Cdecl)]
         public static extern ErrorCode UnloadFont(
             IntPtr ctx,
-            int fontIndex
+            IntPtr fontHandle
         );
 
         [DllImport("fontlib", CallingConvention = CallingConvention.Cdecl)]
         public static extern ErrorCode ShapeText(
             IntPtr ctx,
-            int fontIndex,
+            IntPtr fontHandle,
             Allocator allocator,
             NativeBuffer<byte> text,
             out NativeBuffer<ShapingGlyph> outGlyphs
@@ -107,7 +122,7 @@ namespace Elfenlabs.Text
         [DllImport("fontlib", CallingConvention = CallingConvention.Cdecl)]
         public static extern ErrorCode DrawAtlas(
             IntPtr ctx,
-            int fontIndex,
+            IntPtr fontHandle,
             int textureSize,
             int glyphSize,
             int padding,
