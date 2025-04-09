@@ -99,7 +99,11 @@ namespace Text
             hb_glyph_info_t *glyphInfo = hb_buffer_get_glyph_infos(buffer, &glyphCount);
             hb_glyph_position_t *glyphPos = hb_buffer_get_glyph_positions(buffer, &glyphCount);
 
-            Log() << "Shaped " << glyphCount << " glyphs";
+            Log() << "Shaped " << glyphCount << " glyphs" << "\n";
+            for (unsigned int i = 0; i < glyphCount; ++i)
+            {
+                Log() << "Glyph " << i << ": codepoint: " << glyphInfo[i].codepoint << ", x_offset: " << glyphPos[i].x_offset << ", y_offset: " << glyphPos[i].y_offset << ", x_advance: " << glyphPos[i].x_advance << ", y_advance: " << glyphPos[i].y_advance << "\n";
+            }
 
             // Write glyph data
             *outGlyphs = Alloc<Glyph>(glyphCount, allocator);
