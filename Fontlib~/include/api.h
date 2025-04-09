@@ -30,53 +30,50 @@ EXPORT_DLL CreateContext(
     LogCallback logCallback,         // Log callback
     AllocCallback allocCallback,     // Buffer allocation callback
     DisposeCallback disposeCallback, // Buffer disposal callback
-    void **outCtx                    // Out context
+    Context **outCtx                 // Out context
 )
 {
     *outCtx = new Text::Context(logCallback, allocCallback, disposeCallback);
     return Text::ErrorCode::Success;
 }
 
-EXPORT_DLL DestroyContext(void *ctx)
+EXPORT_DLL DestroyContext(Context *ctx)
 {
-    delete (Text::Context *)ctx;
+    delete ctx;
     return Text::ErrorCode::Success;
 }
 
 EXPORT_DLL LoadFont(
-    void *ctx,               // Context
-    Buffer<byte> inFontData, // Font data
-    int *outFontIndex        // Out font index
+    Context *ctx,                       // Context
+    Buffer<byte> inFontData,            // Font data
+    FontDescription *outFontDescription // Out font description
 )
 {
-    auto context = (Text::Context *)ctx;
-    return context->LoadFont(inFontData, outFontIndex);
+    return ctx->LoadFont(inFontData, outFontDescription);
 };
 
 EXPORT_DLL UnloadFont(
-    void *ctx,    // Context
-    int fontIndex // Font index
+    Context *ctx,          // Context
+    FontHandle *fontHandle // Font index
 )
 {
-    auto context = (Text::Context *)ctx;
-    return context->UnloadFont(fontIndex);
+    return ctx->UnloadFont(fontHandle);
 };
 
 EXPORT_DLL ShapeText(
-    void *ctx,                     // Context
-    int fontIndex,                 // Font index
+    Context *ctx,                  // Context
+    FontHandle *fontHandle,        // Font index
     Allocator allocator,           // Allocator
     Buffer<char> *inText,          // Text sample to shape
     Buffer<Text::Glyph> *outGlyphs // Reference to the glyph buffer
 )
 {
-    auto context = (Text::Context *)ctx;
-    return context->ShapeText(fontIndex, allocator, inText, outGlyphs);
+    return ctx->ShapeText(fontHandle, allocator, inText, outGlyphs);
 };
 
 EXPORT_DLL DrawAtlas(
-    void *ctx,                       // Context
-    int fontIndex,                   // Font index
+    Context *ctx,                    // Context
+    FontHandle *fontHandle,          // Font index
     int textureSize,                 // Texture size
     int glyphSize,                   // Glyph size in pixels
     int padding,                     // Padding between glyphs
@@ -89,9 +86,8 @@ EXPORT_DLL DrawAtlas(
     Buffer<GlyphRect> *outGlyphRects // Output glyph rects
 )
 {
-    auto context = (Text::Context *)ctx;
-    return context->DrawAtlas(
-        fontIndex,
+    return ctx->DrawAtlas(
+        fontHandle,
         textureSize,
         glyphSize,
         padding,
