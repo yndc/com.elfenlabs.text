@@ -49,7 +49,6 @@ namespace Elfenlabs.Text
             {
                 var glyph = GlyphRects[i];
 
-                Debug.Log($"Glyph: {glyph.CodePoint}, X: {glyph.X}, Y: {glyph.Y}, Width: {glyph.Width}, Height: {glyph.Height}");
                 // Convert pixel coordinates to UV coordinates
                 var uv = new float4(
                     (float)glyph.X / Texture.width,
@@ -57,8 +56,6 @@ namespace Elfenlabs.Text
                     (float)glyph.Width / Texture.width,
                     (float)glyph.Height / Texture.height
                 );
-
-                Debug.Log($"Glyph: {glyph.CodePoint}, UV: {uv}");
 
                 map.Add(glyph.CodePoint, uv);
             }
@@ -75,7 +72,9 @@ namespace Elfenlabs.Text
                 FlattenedGlyphRectMap = glyphMapBuilder.CreateBlobAssetReference<BlobFlattenedHashMap<int, float4>>(allocator),
                 FontBytes = fontBytesBuilder.CreateBlobAssetReference<BlobArray<byte>>(allocator),
                 Material = Material,
-                Padding = Padding
+                Padding = Padding,
+                AtlasSize = AtlasSize,
+                GlyphSize = GlyphSize,
             };
 
             glyphMapBuilder.Dispose();

@@ -12,6 +12,8 @@ namespace Elfenlabs.Text
         public BlobAssetReference<BlobArray<byte>> FontBytes;
         public UnityObjectRef<Material> Material;
         public int Padding;
+        public int AtlasSize;
+        public int GlyphSize;
 
         public bool Equals(FontAssetData other)
         {

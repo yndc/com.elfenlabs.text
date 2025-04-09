@@ -7,10 +7,9 @@ namespace Elfenlabs.Text
 {
     public struct FontAssetRuntimeData : ICleanupSharedComponentData, IEquatable<FontAssetRuntimeData>
     {
-        public int Index;
-
+        public FontDescription Description;
         public Entity PrototypeEntity;
-        
+
         [NativeDisableContainerSafetyRestriction]
         public UnsafeHashMap<int, float4> GlyphRectMap;
 

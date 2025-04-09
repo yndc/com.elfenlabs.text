@@ -78,13 +78,13 @@ namespace Elfenlabs.Text
                     FontLibrary.LoadFont(
                         pluginHandle,
                         assetData.FontBytes.AsNativeBuffer(),
-                        out var fontIndex);
+                        out var fontDesc);
 
                     runtimeData = new FontAssetRuntimeData
                     {
+                        Description = fontDesc,
                         GlyphRectMap = assetData.FlattenedGlyphRectMap.Value.Reconstruct(Allocator.Persistent),
                         PrototypeEntity = AdaptPrefab(ref state, ecb, quadPrototype, assetData.Material),
-                        Index = fontIndex,
                     };
 
                     runtimeAssetMap.Add(assetData, runtimeData);
@@ -116,7 +116,7 @@ namespace Elfenlabs.Text
             runtimeData.GlyphRectMap.Dispose();
             ecb.DestroyEntity(runtimeData.PrototypeEntity);
             var pluginHandle = SystemAPI.GetSingleton<FontPluginRuntimeHandle>().Value;
-            FontLibrary.UnloadFont(pluginHandle, runtimeData.Index);
+            FontLibrary.UnloadFont(pluginHandle, runtimeData.Description.Handle);
         }
 
         readonly Entity AdaptPrefab(ref SystemState state, EntityCommandBuffer ecb, Entity original, UnityObjectRef<Material> material)

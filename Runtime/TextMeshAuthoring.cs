@@ -12,6 +12,8 @@ namespace Elfenlabs.Text
         public FontAssetAuthoring Font;
 
         public string Text;
+
+        public float FontSize = 1f;
     }
 
     public struct FontAssetPreBakeReference : ISharedComponentData, IEquatable<FontAssetPreBakeReference>
@@ -40,6 +42,7 @@ namespace Elfenlabs.Text
             StringUtility.CopyToDynamicBuffer(authoring.Text, buffer);
             AddSharedComponentManaged(entity, new FontAssetPreBakeReference { Value = authoring.Font });
             AddComponent(entity, new Parent());
+            AddComponent(entity, new TextFontWorldSize { Value = authoring.FontSize });
         }
     }
 }

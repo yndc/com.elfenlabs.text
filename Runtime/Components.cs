@@ -17,6 +17,11 @@ namespace Elfenlabs.Text
 
     }
 
+    public struct TextFontWorldSize : IComponentData
+    {
+        public float Value;
+    }
+
     [MaterialProperty("_GlyphAtlasIndex")]
     public struct MaterialPropertyGlyphAtlasIndex : IComponentData
     {
