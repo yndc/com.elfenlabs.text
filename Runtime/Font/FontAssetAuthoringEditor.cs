@@ -106,7 +106,6 @@ namespace Elfenlabs.Text
             for (int i = 0; i < self.Ligatures.Count; i++)
                 charsetBuilder.Add(self.Ligatures[i]);
             var str = charsetBuilder.ToString();
-            Debug.Log("String: " + str);
 
             // Generate atlas texture
             var stringBuffer = NativeBuffer<byte>.FromString(str, Allocator.Temp);
@@ -119,6 +118,7 @@ namespace Elfenlabs.Text
                 texture.width,
                 self.GlyphSize,
                 self.Padding,
+                self.Margin,
                 self.DistanceMappingRange,
                 (int)self.GlyphRenderFlags,
                 (int)self.CompactFlags,

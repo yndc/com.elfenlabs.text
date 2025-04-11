@@ -17,7 +17,8 @@ namespace Elfenlabs.Text
         [Header("Atlas Settings")]
         public int AtlasSize = 512;
         public int GlyphSize = 32;
-        public int Padding = 2;
+        public int Padding = 4;
+        public int Margin = 2;
         public float DistanceMappingRange = 0.5f;
         public GlyphRenderFlags GlyphRenderFlags = GlyphRenderFlags.None;
         public AtlasCompactFlags CompactFlags = AtlasCompactFlags.None;

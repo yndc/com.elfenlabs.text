@@ -136,7 +136,7 @@ Shader "Elfenlabs/Text-MTSDF"
             float4 frag(FragmentInput IN) : SV_Target
             {
                 float4 msd = SAMPLE_TEXTURE2D_ARRAY(_MainTex, sampler_MainTex, IN.uv, IN.texIndex);
-                float sd = median(msd.r, msd.g, msd.b) * step(0.2, msd.a);
+                float sd = median(msd.r, msd.g, msd.b);
                 float screenDistance = getScreenRange(_GlyphSmoothnessScreenDistanceFactor, IN.uv, 512);
 
                 // Compute opacity with smooth transition
