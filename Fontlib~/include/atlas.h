@@ -27,7 +27,7 @@ namespace Text
 
     class Atlas
     {
-        std::vector<GlyphRect> rects;
+        std::vector<GlyphPixelMetrics> rects;
     };
 
     enum CompactMode
@@ -50,10 +50,10 @@ namespace Text
     private:
         AtlasConfig config;
         std::vector<Row> rows;
-        Buffer<GlyphRect> glyphs;
+        Buffer<GlyphPixelMetrics> glyphs;
 
     public:
-        AtlasBuilder(AtlasConfig config, Buffer<GlyphRect> glyphs) : config(config), glyphs(glyphs) {}
+        AtlasBuilder(AtlasConfig config, Buffer<GlyphPixelMetrics> glyphs) : config(config), glyphs(glyphs) {}
 
         /// @brief Builds an atlas for the given items
         /// @param items

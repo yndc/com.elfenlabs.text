@@ -30,12 +30,9 @@ namespace Text
         return byte(~int(255.5f - 255.f * clamp(x)));
     }
 
-    const int FLATTEN_STEPS_PER_CURVE = 10;   // How many line segments per Bezier curve
-    const double CLIPPER_SCALE_FACTOR = 32.0; // Scale factor for integer coords
+    const int FLATTEN_STEPS_PER_CURVE = 32; // How many line segments per Bezier curve
+    const double CLIPPER_SCALE_FACTOR = 1000.0;
 
-    // --- Data Structures ---
-
-    // Using Clipper's Point structure for convenience during decomposition
     using PointD = Clipper2Lib::Point<double>;
 
     struct DecomposeData
@@ -140,8 +137,6 @@ namespace Text
         return 0;
     }
 
-    // --- Clipper Paths to msdfgen::Shape Conversion ---
-
     /**
      * Converts the output paths from Clipper2 (scaled integers) into an msdfgen::Shape object.
      *
@@ -149,18 +144,15 @@ namespace Text
      * @param scale_factor The factor used to scale coordinates for Clipper (e.g., 1000.0).
      * @return An msdfgen::Shape containing the geometry.
      */
-    msdfgen::Shape ConvertClipperPathsToMsdfShapeEMNormalized( // Renamed for clarity
+    msdfgen::Shape ConvertClipperPathsToMsdfShapeEMNormalized(
         const Clipper2Lib::Paths64 &clipper_paths,
-        double clipper_scale_factor,
-        int units_per_EM) // Added units_per_EM
+        int units_per_EM)
     {
         msdfgen::Shape shape;
         shape.contours.reserve(clipper_paths.size());
 
-        // Basic check for valid scale factors and units_per_EM
-        if (clipper_scale_factor == 0 || units_per_EM <= 0)
+        if (units_per_EM <= 0)
         {
-            // Return empty shape if inputs are invalid
             return shape;
         }
 
@@ -170,7 +162,7 @@ namespace Text
         // Normalized coord = FUnit / units_per_EM
         // => Normalized coord = (Clipper coord / clipper_scale_factor) / units_per_EM
         // => Normalized coord = Clipper coord * (1.0 / (clipper_scale_factor * units_per_EM))
-        const double combined_inv_scale = 1.0 / (clipper_scale_factor * static_cast<double>(units_per_EM));
+        const double combined_inv_scale = 1.0 / (CLIPPER_SCALE_FACTOR * static_cast<double>(units_per_EM));
 
         for (const Clipper2Lib::Path64 &path : clipper_paths)
         {
@@ -192,9 +184,7 @@ namespace Text
                 const double epsilon = 1e-12; // Use a slightly larger epsilon for normalized coords
                 if (fabs(p1.x - p2.x) > epsilon || fabs(p1.y - p2.y) > epsilon)
                 {
-                    // Use LinearSegment (or LineSegment depending on msdfgen version)
                     contour.addEdge(new msdfgen::LinearSegment(p1, p2));
-                    // contour.addEdge(new msdfgen::LineSegment(p1, p2)); // If using older msdfgen
                 }
             }
 
@@ -215,22 +205,15 @@ namespace Text
 
     msdfgen::Shape GetResolvedShape(FT_Face face, int glyphIndex)
     {
-        FT_Load_Glyph(face, glyphIndex, FT_LOAD_NO_BITMAP | FT_LOAD_NO_HINTING);
+        FT_Load_Glyph(face, glyphIndex, FT_LOAD_NO_SCALE);
         FT_Outline *outline = &face->glyph->outline;
         DecomposeData decompose_data;
-        FT_Outline_Funcs decompose_callbacks;
+        FT_Outline_Funcs decompose_callbacks = {};
         decompose_callbacks.move_to = MoveToFunc;
         decompose_callbacks.line_to = LineToFunc;
         decompose_callbacks.conic_to = ConicToFunc;
         decompose_callbacks.cubic_to = CubicToFunc;
-        decompose_callbacks.shift = 0;
-        decompose_callbacks.delta = 0;
         FT_Outline_Decompose(outline, &decompose_callbacks, &decompose_data);
-        // if (decompose_data.contours.empty())
-        // {
-        //     return;
-        // }
-
         Clipper2Lib::Paths64 clipper_paths;
         clipper_paths.reserve(decompose_data.contours.size());
         for (const auto &contour_d : decompose_data.contours)
@@ -243,27 +226,18 @@ namespace Text
                     static_cast<int64_t>(std::round(pt_d.x * CLIPPER_SCALE_FACTOR)),
                     static_cast<int64_t>(std::round(pt_d.y * CLIPPER_SCALE_FACTOR))));
             }
-            // Clipper often benefits from simpler polygons if possible
-            // path_i = Clipper2Lib::SimplifyPath(path_i, 0.1 * CLIPPER_SCALE_FACTOR); // Optional simplification
-            clipper_paths.push_back(path_i);
+            // Add path only if it's not degenerate for Clipper
+            if (path_i.size() >= 2)
+                clipper_paths.push_back(std::move(path_i));
         }
 
         Clipper2Lib::Clipper64 clipper;
-        Clipper2Lib::Paths64 solution_paths;      // To store the result
-        Clipper2Lib::Paths64 open_solution_paths; // Not used for union
-
-        // AddPaths takes r-value ref, so move is efficient
+        Clipper2Lib::Paths64 solution_paths;
         clipper.AddSubject(std::move(clipper_paths));
-
-        // FillRule::NonZero is standard for fonts
-        // Use FillRule::Positive for only positively wound contours if needed
-        clipper.Execute(Clipper2Lib::ClipType::Union,
-                        Clipper2Lib::FillRule::NonZero, // Or ::Positive, ::EvenOdd depending on need
-                        solution_paths);
+        clipper.Execute(Clipper2Lib::ClipType::Union, Clipper2Lib::FillRule::NonZero, solution_paths);
 
         return ConvertClipperPathsToMsdfShapeEMNormalized(
             solution_paths,
-            CLIPPER_SCALE_FACTOR,
             face->units_per_EM);
     }
 
@@ -280,16 +254,16 @@ namespace Text
         return shape;
     }
 
-    void DrawGlyph(FT_Face face, GlyphRect glyphRect, int textureSize, int glyphSize, int padding, float distanceMappingRange, int renderFlags, Buffer<RGBA32Pixel> *refTexture)
+    void DrawGlyph(FT_Face face, GlyphPixelMetrics GlyphPixelMetrics, int textureSize, int glyphSize, int padding, float distanceMappingRange, int renderFlags, Buffer<RGBA32Pixel> *refTexture)
     {
         msdfgen::Shape shape;
         if (Flag::has(renderFlags, GlyphRenderFlag::ResolveIntersections))
         {
-            shape = GetResolvedShape(face, glyphRect.index);
+            shape = GetResolvedShape(face, GlyphPixelMetrics.index);
         }
         else
         {
-            shape = GetShape(face, glyphRect.index);
+            shape = GetShape(face, GlyphPixelMetrics.index);
         }
 
         edgeColoringSimple(shape, 3.0);
@@ -310,12 +284,12 @@ namespace Text
         msdfgen::SDFTransformation transform(projection, msdfgen::Range(distanceMappingRange));
         msdfgen::MSDFGeneratorConfig config(true);
         msdfgen::generateMTSDF(outBitmap, shape, transform, config);
-        for (int dx = 0; dx < glyphRect.w; ++dx)
+        for (int dx = 0; dx < GlyphPixelMetrics.w; ++dx)
         {
-            for (int dy = 0; dy < glyphRect.h; ++dy)
+            for (int dy = 0; dy < GlyphPixelMetrics.h; ++dy)
             {
-                int destX = glyphRect.x + dx;
-                int destY = glyphRect.y + dy;
+                int destX = GlyphPixelMetrics.x + dx;
+                int destY = GlyphPixelMetrics.y + dy;
                 int srcX = dx;
                 int srcY = dy;
                 if (destX >= 0 && destX < textureSize && destY >= 0 && destY < textureSize)

@@ -14,11 +14,17 @@ namespace Text
         int32_t yAdvance;
     };
 
-    /// @brief Glyph index paired with its bounding rectangle within the atlas
-    struct GlyphRect
+    struct GlyphPixelMetrics
     {
         int index;
-        int x, y, w, h;
+        int x;
+        int y;
+        int w;
+        int h;
+        int l;
+        int t;
+        
+        GlyphPixelMetrics(int index) : index(index), x(0), y(0), w(0), h(0), l(0), t(0) {}
     };
 }
 

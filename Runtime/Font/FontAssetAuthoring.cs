@@ -33,7 +33,7 @@ namespace Elfenlabs.Text
         public Texture2DArray Texture;
 
         [ReadOnly]
-        public List<GlyphRect> GlyphRects;
+        public List<GlyphPixelMetrics> Glyphs;
 
         public Material Material;
 
@@ -41,23 +41,15 @@ namespace Elfenlabs.Text
         {
             var glyphMapBuilder = new BlobBuilder(Allocator.Temp);
             var fontBytesBuilder = new BlobBuilder(Allocator.Temp);
-            ref BlobFlattenedHashMap<int, float4> glyphRectMap = ref glyphMapBuilder.ConstructRoot<BlobFlattenedHashMap<int, float4>>();
+            ref BlobFlattenedHashMap<int, GlyphRuntimeData> glyphRectMap = ref glyphMapBuilder.ConstructRoot<BlobFlattenedHashMap<int, GlyphRuntimeData>>();
             ref BlobArray<byte> fontBytes = ref fontBytesBuilder.ConstructRoot<BlobArray<byte>>();
 
-            var map = new UnsafeHashMap<int, float4>(GlyphRects.Count, Allocator.Temp);
-            for (int i = 0; i < GlyphRects.Count; i++)
+            var map = new UnsafeHashMap<int, GlyphRuntimeData>(Glyphs.Count, Allocator.Temp);
+            for (int i = 0; i < Glyphs.Count; i++)
             {
-                var glyph = GlyphRects[i];
-
-                // Convert pixel coordinates to UV coordinates
-                var uv = new float4(
-                    (float)glyph.X / Texture.width,
-                    (float)glyph.Y / Texture.height,
-                    (float)glyph.Width / Texture.width,
-                    (float)glyph.Height / Texture.height
-                );
-
-                map.Add(glyph.CodePoint, uv);
+                var glyph = Glyphs[i];
+                if (glyph.CodePoint == 0)
+                map.Add(glyph.CodePoint, new GlyphRuntimeData(glyph, GlyphSize, AtlasSize));
             }
 
             glyphRectMap.Flatten(glyphMapBuilder, map);
@@ -69,7 +61,7 @@ namespace Elfenlabs.Text
 
             var assetData = new FontAssetData
             {
-                FlattenedGlyphRectMap = glyphMapBuilder.CreateBlobAssetReference<BlobFlattenedHashMap<int, float4>>(allocator),
+                FlattenedGlyphMap = glyphMapBuilder.CreateBlobAssetReference<BlobFlattenedHashMap<int, GlyphRuntimeData>>(allocator),
                 FontBytes = fontBytesBuilder.CreateBlobAssetReference<BlobArray<byte>>(allocator),
                 Material = Material,
                 Padding = Padding,

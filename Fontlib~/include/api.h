@@ -72,18 +72,18 @@ EXPORT_DLL ShapeText(
 };
 
 EXPORT_DLL DrawAtlas(
-    Context *ctx,                    // Context
-    FontHandle *fontHandle,          // Font index
-    int textureSize,                 // Texture size
-    int glyphSize,                   // Glyph size in pixels
-    int padding,                     // Padding between glyphs
-    float distanceMappingRange,      // Distance mapping range
-    int glyphRenderFlags,            // Glyph render flags
-    int compactFlags,                // Compact flags
-    Allocator allocator,             // Allocator for the output glyph rects
-    Buffer<char> *inText,            // Text to shape
-    Buffer<RGBA32Pixel> *refTexture, // Output texture pointer
-    Buffer<GlyphRect> *outGlyphRects // Output glyph rects
+    Context *ctx,                                   // Context
+    FontHandle *fontHandle,                         // Font index
+    int textureSize,                                // Texture size
+    int glyphSize,                                  // Glyph size in pixels
+    int padding,                                    // Padding between glyphs
+    float distanceMappingRange,                     // Distance mapping range
+    int glyphRenderFlags,                           // Glyph render flags
+    int compactFlags,                               // Compact flags
+    Allocator allocator,                            // Allocator for the output glyph rects
+    Buffer<char> *inText,                           // Text to shape
+    Buffer<RGBA32Pixel> *refTexture,                // Output texture pointer
+    Buffer<GlyphPixelMetrics> *outGlyphPixelMetrics // Output glyph rects
 )
 {
     return ctx->DrawAtlas(
@@ -97,7 +97,7 @@ EXPORT_DLL DrawAtlas(
         allocator,
         inText,
         refTexture,
-        outGlyphRects);
+        outGlyphPixelMetrics);
 }
 
 #endif

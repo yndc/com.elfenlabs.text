@@ -83,7 +83,7 @@ namespace Elfenlabs.Text
                     runtimeData = new FontAssetRuntimeData
                     {
                         Description = fontDesc,
-                        GlyphRectMap = assetData.FlattenedGlyphRectMap.Value.Reconstruct(Allocator.Persistent),
+                        GlyphRectMap = assetData.FlattenedGlyphMap.Value.Reconstruct(Allocator.Persistent),
                         PrototypeEntity = AdaptPrefab(ref state, ecb, quadPrototype, assetData.Material),
                     };
 

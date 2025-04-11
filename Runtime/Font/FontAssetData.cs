@@ -8,7 +8,7 @@ namespace Elfenlabs.Text
 {
     public struct FontAssetData : ISharedComponentData, IEquatable<FontAssetData>
     {
-        public BlobAssetReference<BlobFlattenedHashMap<int, float4>> FlattenedGlyphRectMap;
+        public BlobAssetReference<BlobFlattenedHashMap<int, GlyphRuntimeData>> FlattenedGlyphMap;
         public BlobAssetReference<BlobArray<byte>> FontBytes;
         public UnityObjectRef<Material> Material;
         public int Padding;
@@ -17,7 +17,7 @@ namespace Elfenlabs.Text
 
         public bool Equals(FontAssetData other)
         {
-            return FlattenedGlyphRectMap.Equals(other.FlattenedGlyphRectMap)
+            return FlattenedGlyphMap.Equals(other.FlattenedGlyphMap)
                 && Material.Equals(other.Material)
                 && Padding == other.Padding;
         }
@@ -25,7 +25,7 @@ namespace Elfenlabs.Text
         public override readonly int GetHashCode()
         {
             return HashCode.Combine(
-                FlattenedGlyphRectMap.GetHashCode(),
+                FlattenedGlyphMap.GetHashCode(),
                 Material.GetHashCode(),
                 Padding);
         }

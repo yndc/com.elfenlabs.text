@@ -59,17 +59,6 @@ namespace Elfenlabs.Text
         public int YAdvance;
     }
 
-    [Serializable]
-    [StructLayout(LayoutKind.Sequential)]
-    public struct GlyphRect
-    {
-        public int CodePoint;
-        public int X;
-        public int Y;
-        public int Width;
-        public int Height;
-    }
-
     public static class FontLibrary
     {
         public struct Instance
@@ -132,7 +121,7 @@ namespace Elfenlabs.Text
             Allocator allocator,
             in NativeBuffer<byte> inText,
             ref NativeBuffer<Color32> refTexture,
-            out NativeBuffer<GlyphRect> outGlyphs
+            out NativeBuffer<GlyphPixelMetrics> outGlyphs
         );
 
         [DllImport("fontlib", CallingConvention = CallingConvention.Cdecl)]

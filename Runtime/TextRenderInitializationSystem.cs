@@ -42,7 +42,6 @@ namespace Elfenlabs.Text
                 {
                     unitsPerEM = 1000f;
                 }
-                Debug.Log("Font units per EM: " + unitsPerEM);
                 return targetWorldHeight / unitsPerEM;
             }
 
@@ -65,51 +64,68 @@ namespace Elfenlabs.Text
                     textBufferData.AsNativeBuffer().ReinterpretCast<TextBufferData, byte>(),
                     out var glyphs);
 
-                float targetWorldHeight = textFontWorldSize.Value;
-                float fontUnitsToWorldScale = GetFontUnitsToWorldScale(fontRuntimeData.Description.UnitsPerEM, targetWorldHeight);
+                var worldScale = textFontWorldSize.Value;
+                var fontUnitsToWorldScale = GetFontUnitsToWorldScale(fontRuntimeData.Description.UnitsPerEM, worldScale);
 
                 // Position each glyphs
                 var cursor = float2.zero;
                 for (int i = 0; i < glyphs.Count(); i++)
                 {
-                    var glyphInfo = glyphs[i];
+                    var glyphShape = glyphs[i];
                     var codePoint = glyphs[i].CodePoint;
-                    var worldXOffset = glyphInfo.XOffset * fontUnitsToWorldScale;
-                    var worldYOffset = glyphInfo.YOffset * fontUnitsToWorldScale;
-                    var worldXAdvance = glyphInfo.XAdvance * fontUnitsToWorldScale;
-                    var worldYAdvance = glyphInfo.YAdvance * fontUnitsToWorldScale;
+                    var worldXOffset = glyphShape.XOffset * fontUnitsToWorldScale;
+                    var worldYOffset = glyphShape.YOffset * fontUnitsToWorldScale;
+                    var worldXAdvance = glyphShape.XAdvance * fontUnitsToWorldScale;
+                    var worldYAdvance = glyphShape.YAdvance * fontUnitsToWorldScale;
 
-                    if (fontRuntimeData.GlyphRectMap.TryGetValue(codePoint, out var glyphRect))
+                    if (fontRuntimeData.GlyphRectMap.TryGetValue(codePoint, out var glyphInfo))
                     {
                         var glyphEntity = ECB.Instantiate(chunkIndexInQuery, fontRuntimeData.PrototypeEntity);
                         ECB.AddComponent(chunkIndexInQuery, glyphEntity, new Parent { Value = entity });
                         ECB.AddComponent(chunkIndexInQuery, glyphEntity, new MaterialPropertyGlyphAtlasIndex { Value = 0 });
-                        ECB.AddComponent(chunkIndexInQuery, glyphEntity, new MaterialPropertyGlyphRect { Value = glyphRect });
+                        ECB.AddComponent(chunkIndexInQuery, glyphEntity, new MaterialPropertyGlyphRect { Value = glyphInfo.AtlasUV });
 
                         // TODO: set conditional
                         ECB.AddComponent(chunkIndexInQuery, glyphEntity, new MaterialPropertyGlyphBaseColor { Value = new float4(1f, 1f, 1f, 1f) });
-                        ECB.AddComponent(chunkIndexInQuery, glyphEntity, new MaterialPropertyGlyphOutlineThickness { Value = 0.2f });
+                        ECB.AddComponent(chunkIndexInQuery, glyphEntity, new MaterialPropertyGlyphOutlineThickness { Value = 0.0f });
                         ECB.AddComponent(chunkIndexInQuery, glyphEntity, new MaterialPropertyGlyphOutlineColor { Value = new float4(0f, 0f, 0f, 1f) });
 
-                        // Set the scale of the glyph entity based on the font size
-                        var worldSize = textFontWorldSize.Value;
-                        var pixelSize = new float2(glyphRect.z, glyphRect.w) * fontAssetData.AtlasSize;
+                        // Calculate sizes
+                        var pixelSize = new float2(glyphInfo.AtlasUV.z, glyphInfo.AtlasUV.w) * fontAssetData.AtlasSize;
                         var pixelSizeNoPadding = pixelSize - fontAssetData.Padding * 2f;
-                        // scaleTextureSize *= (scaleTextureSize.x + fontAssetData.Padding * 2f) / scaleTextureSize.x;
-                        var scaleWorldSize = pixelSize / fontAssetData.GlyphSize * worldSize;
+                        var emSize = pixelSize / fontAssetData.GlyphSize;
+                        var emSizeNoPadding = pixelSizeNoPadding / fontAssetData.GlyphSize;
+                        var worldSize = emSize * worldScale;
+                        var worldSizeNoPadding = emSizeNoPadding * worldScale;
+
+                        Debug.Log($"Glyph {codePoint}," +
+                            $"rect pixels: {pixelSizeNoPadding}, " +
+                            $"metric pixels: {glyphInfo.PixelMetrics.Width - fontAssetData.Padding * 2f}, {glyphInfo.PixelMetrics.Height - fontAssetData.Padding * 2f} " +
+                            $"metric top px: {glyphInfo.PixelMetrics.Top}");
+
+                        // Calculate offset from the baseline 
+                        var worldBearingOffset = new float2(
+                            glyphInfo.LeftEM * worldScale,
+                            (glyphInfo.TopEM - emSizeNoPadding.y) * worldScale
+                        );
 
                         // Set the local transform of the glyph entity
                         ECB.AddComponent(chunkIndexInQuery, glyphEntity, new LocalTransform
                         {
-                            // Position = new float3(position + new float2(glyphs[i].XOffset, glyphs[i].YOffset), 0f),
-                            Position = new float3(cursor.x + worldXOffset + (0.5f * scaleWorldSize.x), cursor.y + worldYOffset, 0f),
+                            Position = new float3(
+                                cursor.x + worldXOffset + (0.5f * worldSizeNoPadding.x) + worldBearingOffset.x,
+                                cursor.y + worldYOffset + (0.5f * worldSizeNoPadding.y) + worldBearingOffset.y,
+                                0f),
                             Rotation = quaternion.identity,
                             Scale = 1f
                         });
 
                         ECB.AddComponent(chunkIndexInQuery, glyphEntity, new PostTransformMatrix
                         {
-                            Value = float4x4.TRS(float3.zero, quaternion.identity, new float3(scaleWorldSize, 1f))
+                            Value = float4x4.TRS(
+                                float3.zero,
+                                quaternion.identity,
+                                new float3(worldSize, 1f))
                         });
                     }
 

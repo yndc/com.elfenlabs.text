@@ -41,13 +41,13 @@ namespace Text
             return Success;
         }
 
-        ErrorCode UnloadFont(FontHandle* fontHandle)
+        ErrorCode UnloadFont(FontHandle *fontHandle)
         {
             fontHandle->Dispose();
             return Success;
         }
 
-        ErrorCode ShapeText(FontHandle* fontHandle, Allocator allocator, Buffer<char> *inText, Buffer<Glyph> *outGlyphs)
+        ErrorCode ShapeText(FontHandle *fontHandle, Allocator allocator, Buffer<char> *inText, Buffer<Glyph> *outGlyphs)
         {
             // Shape the text
             auto buffer = hb_buffer_create();
@@ -86,7 +86,7 @@ namespace Text
             return ErrorCode::Success;
         }
 
-        std::vector<int> ShapeText(FontHandle* fontHandle, Buffer<char> *inText)
+        std::vector<int> ShapeText(FontHandle *fontHandle, Buffer<char> *inText)
         {
             // Shape the text
             auto buffer = hb_buffer_create();
@@ -116,7 +116,7 @@ namespace Text
         }
 
         ErrorCode DrawAtlas(
-            FontHandle* fontHandle,
+            FontHandle *fontHandle,
             int textureSize,
             int glyphSize,
             int padding,
@@ -126,9 +126,9 @@ namespace Text
             Allocator allocator,
             Buffer<char> *inText,
             Buffer<RGBA32Pixel> *refTexture,
-            Buffer<GlyphRect> *outGlyphRects)
+            Buffer<GlyphPixelMetrics> *outGlyphMetrics)
         {
-            auto glyphs = CreateGlyphRectBuffer(fontHandle, allocator, inText);
+            auto glyphs = CreateGlyphPixelMetricsBuffer(fontHandle, allocator, inText);
 
             Log() << "Unique glyph count: " << glyphs.Count();
 
@@ -143,7 +143,8 @@ namespace Text
                 auto metrics = face->glyph->metrics;
                 glyph.w = metrics.width >> 6;
                 glyph.h = metrics.height >> 6;
-                Log() << "Glyph " << glyph.index << " metrics: " << glyph.w << "x" << glyph.h;
+                glyph.t = metrics.horiBearingY >> 6;
+                glyph.l = metrics.horiBearingX >> 6;
             }
 
             // Prepare the atlas
@@ -162,12 +163,12 @@ namespace Text
                 DrawGlyph(face, glyph, textureSize, glyphSize, padding, distanceMappingRange, glyphRenderFlags, refTexture);
             }
 
-            *outGlyphRects = glyphs;
+            *outGlyphMetrics = glyphs;
 
             return Text::ErrorCode::Success;
         }
 
-        Buffer<GlyphRect> CreateGlyphRectBuffer(FontHandle* fontHandle, Allocator allocator, Buffer<char> *inText)
+        Buffer<GlyphPixelMetrics> CreateGlyphPixelMetricsBuffer(FontHandle *fontHandle, Allocator allocator, Buffer<char> *inText)
         {
             auto shapingResult = ShapeText(fontHandle, inText);
 
@@ -178,11 +179,11 @@ namespace Text
                 glyphIndexSet.insert(shapingResult[i]);
             }
 
-            Buffer<GlyphRect> result = Alloc<GlyphRect>(glyphIndexSet.size(), allocator);
+            Buffer<GlyphPixelMetrics> result = Alloc<GlyphPixelMetrics>(glyphIndexSet.size(), allocator);
             int index = 0;
             for (auto glyphIndex : glyphIndexSet)
             {
-                result[index] = {glyphIndex, 0, 0, 0, 0};
+                result[index] = GlyphPixelMetrics(glyphIndex);
                 index++;
             }
 
