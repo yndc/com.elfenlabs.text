@@ -36,15 +36,6 @@ namespace Elfenlabs.Text
             public EntityCommandBuffer.ParallelWriter ECB;
             public FontPluginRuntimeHandle FontPluginHandle;
 
-            private readonly float GetFontUnitsToWorldScale(float unitsPerEM, float targetWorldHeight)
-            {
-                if (unitsPerEM <= 0)
-                {
-                    unitsPerEM = 1000f;
-                }
-                return targetWorldHeight / unitsPerEM;
-            }
-
             public void Execute(
                 Entity entity,
                 [ChunkIndexInQuery] int chunkIndexInQuery,
@@ -64,8 +55,11 @@ namespace Elfenlabs.Text
                     textBufferData.AsNativeBuffer().ReinterpretCast<TextBufferData, byte>(),
                     out var glyphs);
 
+                Debug.Log($"Shaped {glyphs.Count()} glyphs for {textBufferData.Length} characters");
+
                 var worldScale = textFontWorldSize.Value;
-                var fontUnitsToWorldScale = GetFontUnitsToWorldScale(fontRuntimeData.Description.UnitsPerEM, worldScale);
+                var fontUnitsToWorld = worldScale / fontRuntimeData.Description.UnitsPerEM;
+                var atlasPixelToWorld = worldScale / fontAssetData.GlyphSize;
 
                 // Position each glyphs
                 var cursor = float2.zero;
@@ -73,10 +67,11 @@ namespace Elfenlabs.Text
                 {
                     var glyphShape = glyphs[i];
                     var codePoint = glyphs[i].CodePoint;
-                    var worldXOffset = glyphShape.XOffset * fontUnitsToWorldScale;
-                    var worldYOffset = glyphShape.YOffset * fontUnitsToWorldScale;
-                    var worldXAdvance = glyphShape.XAdvance * fontUnitsToWorldScale;
-                    var worldYAdvance = glyphShape.YAdvance * fontUnitsToWorldScale;
+                    var worldXOffset = glyphShape.XOffset * fontUnitsToWorld;
+                    var worldYOffset = glyphShape.YOffset * fontUnitsToWorld;
+                    var worldXAdvance = glyphShape.XAdvance * fontUnitsToWorld;
+                    var worldYAdvance = glyphShape.YAdvance * fontUnitsToWorld;
+
 
                     if (fontRuntimeData.GlyphRectMap.TryGetValue(codePoint, out var glyphInfo))
                     {
@@ -91,22 +86,14 @@ namespace Elfenlabs.Text
                         ECB.AddComponent(chunkIndexInQuery, glyphEntity, new MaterialPropertyGlyphOutlineColor { Value = new float4(0f, 0f, 0f, 1f) });
 
                         // Calculate sizes
-                        var pixelSize = new float2(glyphInfo.AtlasUV.z, glyphInfo.AtlasUV.w) * fontAssetData.AtlasSize;
-                        var pixelSizeNoPadding = pixelSize - fontAssetData.Padding * 2f;
-                        var emSize = pixelSize / fontAssetData.GlyphSize;
-                        var emSizeNoPadding = pixelSizeNoPadding / fontAssetData.GlyphSize;
-                        var worldSize = emSize * worldScale;
-                        var worldSizeNoPadding = emSizeNoPadding * worldScale;
-
-                        Debug.Log($"Glyph {codePoint}," +
-                            $"rect pixels: {pixelSizeNoPadding}, " +
-                            $"metric pixels: {glyphInfo.PixelMetrics.Width - fontAssetData.Padding * 2f}, {glyphInfo.PixelMetrics.Height - fontAssetData.Padding * 2f} " +
-                            $"metric top px: {glyphInfo.PixelMetrics.Top}");
+                        // var worldSize = new float2(glyphInfo.Metrics.AtlasWidthPx, glyphInfo.Metrics.AtlasHeightPx) * atlasPixelToWorld;
+                        var worldSizeNoPadding = new float2(glyphInfo.Metrics.WidthFontUnits, glyphInfo.Metrics.HeightFontUnits) * fontUnitsToWorld;
+                        var worldPadding = fontAssetData.Padding * atlasPixelToWorld; // this looks more accurate than atlas pixels
 
                         // Calculate offset from the baseline 
                         var worldBearingOffset = new float2(
-                            glyphInfo.LeftEM * worldScale,
-                            (glyphInfo.TopEM - emSizeNoPadding.y) * worldScale
+                            glyphInfo.Metrics.LeftFontUnits * fontUnitsToWorld,
+                            (glyphInfo.Metrics.TopFontUnits - glyphInfo.Metrics.HeightFontUnits) * fontUnitsToWorld
                         );
 
                         // Set the local transform of the glyph entity
@@ -125,7 +112,7 @@ namespace Elfenlabs.Text
                             Value = float4x4.TRS(
                                 float3.zero,
                                 quaternion.identity,
-                                new float3(worldSize, 1f))
+                                new float3(worldSizeNoPadding + worldPadding * 2f, 1f))
                         });
                     }
 

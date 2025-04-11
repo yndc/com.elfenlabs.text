@@ -6,6 +6,7 @@
 #include <glyph.h>
 #include <buffer.h>
 #include <base.h>
+#include <mathematics.h>
 
 namespace Text
 {
@@ -27,7 +28,7 @@ namespace Text
 
     class Atlas
     {
-        std::vector<GlyphPixelMetrics> rects;
+        std::vector<GlyphMetrics> rects;
     };
 
     enum CompactMode
@@ -42,7 +43,7 @@ namespace Text
     {
         int size;
         int padding;
-        int compactFlags;
+        int compact_flags;
     };
 
     class AtlasBuilder
@@ -50,10 +51,10 @@ namespace Text
     private:
         AtlasConfig config;
         std::vector<Row> rows;
-        Buffer<GlyphPixelMetrics> glyphs;
+        Buffer<GlyphMetrics> glyphs;
 
     public:
-        AtlasBuilder(AtlasConfig config, Buffer<GlyphPixelMetrics> glyphs) : config(config), glyphs(glyphs) {}
+        AtlasBuilder(AtlasConfig config, Buffer<GlyphMetrics> glyphs) : config(config), glyphs(glyphs) {}
 
         /// @brief Builds an atlas for the given items
         /// @param items
@@ -61,7 +62,7 @@ namespace Text
         int Build()
         {
             auto padding = config.padding;
-            auto size = config.size;
+            auto atlasSize = config.size;
 
             // Create an an array of glyph buffer indices
             std::vector<int> indices(glyphs.Count());
@@ -72,7 +73,7 @@ namespace Text
 
             // Sort indices by height descending
             std::sort(indices.begin(), indices.end(), [this](const int &a, const int &b)
-                      { return glyphs[a].h > glyphs[b].h; });
+                      { return glyphs[a].atlas_height_px > glyphs[b].atlas_height_px; });
 
             // Wrap items into rows
             rows.push_back(Row());
@@ -84,13 +85,13 @@ namespace Text
                 auto &glyph = glyphs[index];
 
                 // Add padding to glyph dimensions
-                glyph.w = glyph.w + padding * 2;
-                glyph.h = glyph.h + padding * 2;
+                glyph.atlas_width_px = glyph.atlas_width_px + (padding * 2);
+                glyph.atlas_height_px = glyph.atlas_height_px + (padding * 2);
 
                 // Wrap excess items into new rows
-                if (rows[row].width + glyph.w > size)
+                if (rows[row].width + glyph.atlas_width_px > atlasSize)
                 {
-                    if (totalHeight + rows[row].height + glyph.h > size)
+                    if (totalHeight + rows[row].height + glyph.atlas_height_px > atlasSize)
                     {
                         return -1; // TODO: Handle when the atlas is too small
                     }
@@ -100,10 +101,10 @@ namespace Text
                 }
 
                 // Set glyph position and row dimensions
-                glyph.x = rows[row].width;
-                glyph.y = totalHeight;
-                rows[row].width += glyph.w;
-                rows[row].height = std::max(rows[row].height, glyph.h);
+                glyph.atlas_x_px = rows[row].width;
+                glyph.atlas_y_px = totalHeight;
+                rows[row].width += glyph.atlas_width_px;
+                rows[row].height = std::max(rows[row].height, glyph.atlas_height_px);
                 rows[row].items.push_back(index);
             }
 
@@ -118,7 +119,7 @@ namespace Text
         /// @brief Compacts current items to minimize the height of the rows
         void Compact()
         {
-            if (Flag::has(config.compactFlags, CompactMode::FillEnd))
+            if (Flag::has(config.compact_flags, CompactMode::FillEnd))
             {
                 // Try inserting the thinnest items on every row into the rows before it
                 for (auto i = 1; i < rows.size(); i++)
@@ -132,14 +133,14 @@ namespace Text
                         {
                             auto index = srcRow.items[k];
                             auto &glyph = glyphs[index];
-                            if (glyph.w <= destSpaceLeft)
+                            if (glyph.atlas_width_px <= destSpaceLeft)
                             {
                                 // Move item to target row
                                 destRow.items.push_back(index);
                                 srcRow.items.erase(srcRow.items.begin() + k);
-                                destSpaceLeft -= glyph.w;
-                                destRow.width += glyph.w;
-                                srcRow.width -= glyph.w;
+                                destSpaceLeft -= glyph.atlas_width_px;
+                                destRow.width += glyph.atlas_width_px;
+                                srcRow.width -= glyph.atlas_width_px;
                                 k--;
                             }
                         }
@@ -158,10 +159,10 @@ namespace Text
                 {
                     auto &index = row.items[j];
                     auto &glyph = glyphs[index];
-                    glyph.x = x;
-                    glyph.y = h;
-                    x += glyph.w;
-                    itemMaxHeight = std::max(itemMaxHeight, glyph.h);
+                    glyph.atlas_x_px = x;
+                    glyph.atlas_y_px = h;
+                    x += glyph.atlas_width_px;
+                    itemMaxHeight = std::max(itemMaxHeight, glyph.atlas_height_px);
                 }
                 row.width = x;
                 row.height = itemMaxHeight;

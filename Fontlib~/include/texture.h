@@ -254,16 +254,16 @@ namespace Text
         return shape;
     }
 
-    void DrawGlyph(FT_Face face, GlyphPixelMetrics GlyphPixelMetrics, int textureSize, int glyphSize, int padding, float distanceMappingRange, int renderFlags, Buffer<RGBA32Pixel> *refTexture)
+    void DrawGlyph(FT_Face face, GlyphMetrics glyphMetrics, int textureSize, int glyphSize, int padding, float distanceMappingRange, int renderFlags, Buffer<RGBA32Pixel> *refTexture)
     {
         msdfgen::Shape shape;
         if (Flag::has(renderFlags, GlyphRenderFlag::ResolveIntersections))
         {
-            shape = GetResolvedShape(face, GlyphPixelMetrics.index);
+            shape = GetResolvedShape(face, glyphMetrics.index);
         }
         else
         {
-            shape = GetShape(face, GlyphPixelMetrics.index);
+            shape = GetShape(face, glyphMetrics.index);
         }
 
         edgeColoringSimple(shape, 3.0);
@@ -284,12 +284,12 @@ namespace Text
         msdfgen::SDFTransformation transform(projection, msdfgen::Range(distanceMappingRange));
         msdfgen::MSDFGeneratorConfig config(true);
         msdfgen::generateMTSDF(outBitmap, shape, transform, config);
-        for (int dx = 0; dx < GlyphPixelMetrics.w; ++dx)
+        for (int dx = 0; dx < glyphMetrics.atlas_width_px; ++dx)
         {
-            for (int dy = 0; dy < GlyphPixelMetrics.h; ++dy)
+            for (int dy = 0; dy < glyphMetrics.atlas_height_px; ++dy)
             {
-                int destX = GlyphPixelMetrics.x + dx;
-                int destY = GlyphPixelMetrics.y + dy;
+                int destX = glyphMetrics.atlas_x_px + dx;
+                int destY = glyphMetrics.atlas_y_px + dy;
                 int srcX = dx;
                 int srcY = dy;
                 if (destX >= 0 && destX < textureSize && destY >= 0 && destY < textureSize)

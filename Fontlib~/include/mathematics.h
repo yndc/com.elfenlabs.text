@@ -31,6 +31,21 @@ namespace math
     {
         return n >= T(0) && n <= T(1) ? n : T(n > T(0));
     }
+
+    inline double fracPixelToPixel(int frac)
+    {
+        return frac / 64.0;
+    }
+
+    inline int roundFracPixel(int frac)
+    {
+        return frac << 6;
+    }
+
+    inline int pixelToFracPixel(int pixel)
+    {
+        return pixel * 64;
+    }
 }
 
 #endif

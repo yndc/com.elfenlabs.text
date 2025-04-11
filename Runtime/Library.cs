@@ -121,7 +121,7 @@ namespace Elfenlabs.Text
             Allocator allocator,
             in NativeBuffer<byte> inText,
             ref NativeBuffer<Color32> refTexture,
-            out NativeBuffer<GlyphPixelMetrics> outGlyphs
+            out NativeBuffer<GlyphMetrics> outGlyphs
         );
 
         [DllImport("fontlib", CallingConvention = CallingConvention.Cdecl)]

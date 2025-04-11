@@ -73,11 +73,11 @@ namespace Text
             for (unsigned int i = 0; i < glyphCount; ++i)
             {
                 auto ptr = &(*outGlyphs)[i];
-                ptr->codePoint = glyphInfo[i].codepoint;
-                ptr->xOffset = glyphPos[i].x_offset;
-                ptr->yOffset = glyphPos[i].y_offset;
-                ptr->xAdvance = glyphPos[i].x_advance;
-                ptr->yAdvance = glyphPos[i].y_advance;
+                ptr->index = glyphInfo[i].codepoint;
+                ptr->offset_x_fu = glyphPos[i].x_offset;
+                ptr->offset_y_fu = glyphPos[i].y_offset;
+                ptr->advance_x_fu = glyphPos[i].x_advance;
+                ptr->advance_y_fu = glyphPos[i].y_advance;
             }
 
             // Clean up
@@ -126,7 +126,7 @@ namespace Text
             Allocator allocator,
             Buffer<char> *inText,
             Buffer<RGBA32Pixel> *refTexture,
-            Buffer<GlyphPixelMetrics> *outGlyphMetrics)
+            Buffer<GlyphMetrics> *outGlyphMetrics)
         {
             auto glyphs = CreateGlyphPixelMetricsBuffer(fontHandle, allocator, inText);
 
@@ -134,17 +134,19 @@ namespace Text
 
             // Obtain metrics for all glyphs
             FT_Face face = fontHandle->ft;
-            FT_Set_Pixel_Sizes(face, 0, glyphSize);
             for (int i = 0; i < glyphs.Count(); ++i)
             {
                 auto &glyph = glyphs[i];
-                FT_Load_Glyph(face, glyph.index, FT_LOAD_DEFAULT);
+                FT_Load_Glyph(face, glyph.index, FT_LOAD_NO_SCALE);
 
                 auto metrics = face->glyph->metrics;
-                glyph.w = metrics.width >> 6;
-                glyph.h = metrics.height >> 6;
-                glyph.t = metrics.horiBearingY >> 6;
-                glyph.l = metrics.horiBearingX >> 6;
+                auto units_per_em = face->units_per_EM;
+                glyph.width_fu = metrics.width;
+                glyph.height_fu = metrics.height;
+                glyph.atlas_width_px = metrics.width * glyphSize / units_per_em;
+                glyph.atlas_height_px = metrics.height * glyphSize / units_per_em;
+                glyph.left_fu = metrics.horiBearingX;
+                glyph.top_fu = metrics.horiBearingY;
             }
 
             // Prepare the atlas
@@ -157,8 +159,6 @@ namespace Text
             {
                 auto &glyph = glyphs[i];
 
-                Log() << "Drawing Glyph " << glyph.index << " rect: " << glyph.x << ", " << glyph.y << ", " << glyph.w << ", " << glyph.h;
-
                 // Draw the glyph
                 DrawGlyph(face, glyph, textureSize, glyphSize, padding, distanceMappingRange, glyphRenderFlags, refTexture);
             }
@@ -168,7 +168,7 @@ namespace Text
             return Text::ErrorCode::Success;
         }
 
-        Buffer<GlyphPixelMetrics> CreateGlyphPixelMetricsBuffer(FontHandle *fontHandle, Allocator allocator, Buffer<char> *inText)
+        Buffer<GlyphMetrics> CreateGlyphPixelMetricsBuffer(FontHandle *fontHandle, Allocator allocator, Buffer<char> *inText)
         {
             auto shapingResult = ShapeText(fontHandle, inText);
 
@@ -179,11 +179,11 @@ namespace Text
                 glyphIndexSet.insert(shapingResult[i]);
             }
 
-            Buffer<GlyphPixelMetrics> result = Alloc<GlyphPixelMetrics>(glyphIndexSet.size(), allocator);
+            Buffer<GlyphMetrics> result = Alloc<GlyphMetrics>(glyphIndexSet.size(), allocator);
             int index = 0;
             for (auto glyphIndex : glyphIndexSet)
             {
-                result[index] = GlyphPixelMetrics(glyphIndex);
+                result[index] = GlyphMetrics(glyphIndex);
                 index++;
             }
 

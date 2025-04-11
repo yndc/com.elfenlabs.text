@@ -34,28 +34,28 @@ namespace Text
     class FontDescription
     {
     public:
-        FontHandle *fontHandle;
-        int unitsPerEM;
+        FontHandle *font_handle;
+        int units_per_em;
         int ascender;
         int descender;
         int height;
-        int maxAdvanceWidth;
-        int maxAdvanceHeight;
-        int underlinePosition;
-        int underlineThickness;
+        int max_advance_width;
+        int max_advance_height;
+        int underline_pos;
+        int underline_thickness;
 
         FontDescription(FT_Library ftLib, Buffer<byte> fontData)
         {
-            fontHandle = new FontHandle(ftLib, fontData);
-            FT_Face ftFace = fontHandle->ft;
-            unitsPerEM = ftFace->units_per_EM;
+            font_handle = new FontHandle(ftLib, fontData);
+            FT_Face ftFace = font_handle->ft;
+            units_per_em = ftFace->units_per_EM;
             ascender = ftFace->ascender;
             descender = ftFace->descender;
             height = ftFace->height;
-            maxAdvanceWidth = ftFace->max_advance_width;
-            maxAdvanceHeight = ftFace->max_advance_height;
-            underlinePosition = ftFace->underline_position;
-            underlineThickness = ftFace->underline_thickness;
+            max_advance_width = ftFace->max_advance_width;
+            max_advance_height = ftFace->max_advance_height;
+            underline_pos = ftFace->underline_position;
+            underline_thickness = ftFace->underline_thickness;
         }
     };
 }

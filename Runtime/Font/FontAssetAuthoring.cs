@@ -1,11 +1,9 @@
 using UnityEngine;
 using Unity.Collections;
 using System.Collections.Generic;
-using Unity.Mathematics;
 using Unity.Entities;
 using Elfenlabs.Collections;
 using UnityEditor;
-using Elfenlabs.Unsafe;
 using Unity.Collections.LowLevel.Unsafe;
 
 namespace Elfenlabs.Text
@@ -33,7 +31,7 @@ namespace Elfenlabs.Text
         public Texture2DArray Texture;
 
         [ReadOnly]
-        public List<GlyphPixelMetrics> Glyphs;
+        public List<GlyphMetrics> Glyphs;
 
         public Material Material;
 
@@ -48,7 +46,6 @@ namespace Elfenlabs.Text
             for (int i = 0; i < Glyphs.Count; i++)
             {
                 var glyph = Glyphs[i];
-                if (glyph.CodePoint == 0)
                 map.Add(glyph.CodePoint, new GlyphRuntimeData(glyph, GlyphSize, AtlasSize));
             }
 

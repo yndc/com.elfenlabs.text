@@ -28,19 +28,24 @@ typedef void (*DisposeCallback)(void *ptr, Allocator allocator);
 template <typename T>
 class Buffer
 {
+private:
+    void *ptr;
+    Allocator allocator;
+    int32_t size_bytes;
+
 public:
     Buffer<T>(void *ptr, int32_t sizeBytes, Allocator allocator)
     {
-        this->sizeBytes = sizeBytes;
-        this->allocator = allocator;
         this->ptr = ptr;
+        this->allocator = allocator;
+        this->size_bytes = sizeBytes;
     }
 
     Buffer<T>()
     {
         this->ptr = nullptr;
-        this->sizeBytes = 0;
         this->allocator = Allocator::Invalid;
+        this->size_bytes = 0;
     }
 
     static_assert(std::is_trivially_copyable<T>::value, "T must be a trivially copyable type");
@@ -56,7 +61,7 @@ public:
     {
         free(this->ptr);
         this->ptr = nullptr;
-        this->sizeBytes = 0;
+        this->size_bytes = 0;
     }
 
     /// @brief Resizes the buffer, if the new size is smaller than the current size, the function does nothing
@@ -64,7 +69,7 @@ public:
     void Resize(int32_t newLength)
     {
         auto newSizeBytes = newLength * sizeof(T);
-        if (newSizeBytes <= this->sizeBytes)
+        if (newSizeBytes <= this->size_bytes)
             return;
         if (this->ptr == nullptr)
             this->ptr = malloc(newSizeBytes);
@@ -72,7 +77,7 @@ public:
             this->ptr = realloc(this->ptr, newSizeBytes);
         if (this->ptr == nullptr)
             throw std::bad_alloc();
-        this->sizeBytes = newSizeBytes;
+        this->size_bytes = newSizeBytes;
     }
 
     /// @brief Casts the buffer to a different type, the new type must be a trivially copyable and the buffer size must be a multiple of the new type's size
@@ -87,12 +92,12 @@ public:
 
     const int32_t Count()
     {
-        return sizeBytes / sizeof(T);
+        return size_bytes / sizeof(T);
     }
 
     const int32_t SizeInBytes()
     {
-        return sizeBytes;
+        return size_bytes;
     }
 
     T *Data()
@@ -107,13 +112,13 @@ public:
 
     T &operator[](int32_t index)
     {
-        assert(index * sizeof(T) < sizeBytes);
+        assert(index * sizeof(T) < size_bytes);
         return ((T *)ptr)[index];
     }
 
     const T &operator[](int32_t index) const
     {
-        assert(index * sizeof(T) < sizeBytes);
+        assert(index * sizeof(T) < size_bytes);
         return ((T *)ptr)[index];
     }
 
@@ -122,11 +127,6 @@ public:
     T *end() { return Data() + Count(); }
     const T *begin() const { return Data(); }
     const T *end() const { return Data() + Count(); }
-
-private:
-    void *ptr;
-    Allocator allocator;
-    int32_t sizeBytes;
 };
 #pragma pack(pop)
 

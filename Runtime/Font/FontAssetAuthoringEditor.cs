@@ -129,7 +129,7 @@ namespace Elfenlabs.Text
                 Allocator.Temp,
                 in stringBuffer,
                 ref textureBuffer,
-                out NativeBuffer<GlyphPixelMetrics> glyphsBuffer
+                out NativeBuffer<GlyphMetrics> glyphsBuffer
             );
             texture.Apply();
 
@@ -148,7 +148,7 @@ namespace Elfenlabs.Text
             AssetDatabase.SaveAssets();
 
             // Serialize the glyph mapping result
-            self.Glyphs = new List<GlyphPixelMetrics>(glyphsBuffer.Count());
+            self.Glyphs = new List<GlyphMetrics>(glyphsBuffer.Count());
             for (int i = 0; i < glyphsBuffer.Count(); i++)
             {
                 self.Glyphs.Add(glyphsBuffer[i]);

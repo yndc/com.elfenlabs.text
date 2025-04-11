@@ -15,12 +15,12 @@ namespace Elfenlabs.Text
 
         public readonly bool Equals(FontAssetRuntimeData other)
         {
-            return GlyphRectMap.Equals(other.GlyphRectMap);
+            return PrototypeEntity.Equals(other.PrototypeEntity);
         }
 
         public override readonly int GetHashCode()
         {
-            return GlyphRectMap.GetHashCode();
+            return PrototypeEntity.GetHashCode();
         }
     }
 }

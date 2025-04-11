@@ -83,7 +83,7 @@ EXPORT_DLL DrawAtlas(
     Allocator allocator,                            // Allocator for the output glyph rects
     Buffer<char> *inText,                           // Text to shape
     Buffer<RGBA32Pixel> *refTexture,                // Output texture pointer
-    Buffer<GlyphPixelMetrics> *outGlyphPixelMetrics // Output glyph rects
+    Buffer<GlyphMetrics> *outGlyphPixelMetrics // Output glyph rects
 )
 {
     return ctx->DrawAtlas(

@@ -6,36 +6,37 @@ namespace Elfenlabs.Text
 {
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    public struct GlyphPixelMetrics
+    public struct GlyphMetrics
     {
         public int CodePoint;
-        public int X;
-        public int Y;
-        public int Width;
-        public int Height;
-        public int Left;
-        public int Top;
+        public int AtlasXPx;
+        public int AtlasYPx;
+        public int AtlasWidthPx;
+        public int AtlasHeightPx;
+        public int WidthFontUnits;
+        public int HeightFontUnits;
+        public int LeftFontUnits;
+        public int TopFontUnits;
     }
 
     public struct GlyphRuntimeData
     {
         public int CodePoint;
         public float4 AtlasUV;
-        public float TopEM;
-        public float LeftEM;
-        public GlyphPixelMetrics PixelMetrics;
-        public GlyphRuntimeData(GlyphPixelMetrics pixelMetrics, float glyphSize, float atlasSize)
+        public GlyphMetrics Metrics;
+        public GlyphRuntimeData(GlyphMetrics pixelMetrics, float glyphSize, float atlasSize)
         {
-            PixelMetrics = pixelMetrics;
+            Metrics = pixelMetrics;
             CodePoint = pixelMetrics.CodePoint;
             AtlasUV = new float4(
-                    pixelMetrics.X / atlasSize,
-                    pixelMetrics.Y / atlasSize,
-                    pixelMetrics.Width / atlasSize,
-                    pixelMetrics.Height / atlasSize
+                    pixelMetrics.AtlasXPx / atlasSize,
+                    pixelMetrics.AtlasYPx / atlasSize,
+                    pixelMetrics.AtlasWidthPx / atlasSize,
+                    pixelMetrics.AtlasHeightPx / atlasSize
             );
-            TopEM = pixelMetrics.Top / glyphSize;
-            LeftEM = pixelMetrics.Left / glyphSize;
+            // TopEM = pixelMetrics.TopFontUnits / (glyphSize * 64f);
+            // TopEM = (pixelMetrics.TopFracPx >> 6) / glyphSize;
+            // LeftEM = pixelMetrics.LeftFontUnits / (glyphSize * 64f);
         }
     }
 }
