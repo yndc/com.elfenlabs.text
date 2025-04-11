@@ -15,75 +15,110 @@
 
 #define TEXTLIB_DEBUG
 
-#define EXPORT_DLL extern "C" __declspec(dllexport) Text::ErrorCode
+#define EXPORT_DLL extern "C" __declspec(dllexport) Text::ReturnCode
 
 using namespace math;
 using namespace Text;
 
-/// @brief Creates a new library context
-/// @param logCallback
-/// @param allocCallback
-/// @param disposeCallback
-/// @param outCtx
+/// @brief Creates a new library context, all library functions require a context
+/// @param logCallback Log callback
+/// @param allocCallback Buffer allocation callback
+/// @param disposeCallback Buffer disposal callback
+/// @param outCtx Out context
 /// @return
 EXPORT_DLL CreateContext(
-    LogCallback logCallback,         // Log callback
-    AllocCallback allocCallback,     // Buffer allocation callback
-    DisposeCallback disposeCallback, // Buffer disposal callback
-    Context **outCtx                 // Out context
+    LogCallback logCallback,
+    AllocCallback allocCallback,
+    DisposeCallback disposeCallback,
+    Context **outCtx
 )
 {
     *outCtx = new Text::Context(logCallback, allocCallback, disposeCallback);
-    return Text::ErrorCode::Success;
+    return Text::ReturnCode::Success;
 }
 
+/// @brief Destroys a library context
+/// @param ctx
+/// @return
 EXPORT_DLL DestroyContext(Context *ctx)
 {
     delete ctx;
-    return Text::ErrorCode::Success;
+    return Text::ReturnCode::Success;
 }
 
+/// @brief Loads a font from a byte buffer
+/// @param ctx Context
+/// @param inFontData Font data
+/// @param outFontDescription Out font description
+/// @return
 EXPORT_DLL LoadFont(
-    Context *ctx,                       // Context
-    Buffer<byte> inFontData,            // Font data
-    FontDescription *outFontDescription // Out font description
+    Context *ctx,
+    Buffer<byte> inFontData,
+    FontDescription *outFontDescription
 )
 {
     return ctx->LoadFont(inFontData, outFontDescription);
 };
 
+/// @brief Unloads a font
+/// @param ctx Context
+/// @param fontHandle Font index
+/// @return
 EXPORT_DLL UnloadFont(
-    Context *ctx,          // Context
-    FontHandle *fontHandle // Font index
+    Context *ctx,
+    FontHandle *fontHandle
 )
 {
     return ctx->UnloadFont(fontHandle);
 };
 
+/// @brief Shapes a text sample into glyph arrangement
+/// @param ctx Context
+/// @param fontHandle Font index
+/// @param allocator Allocator
+/// @param inText Text sample to shape
+/// @param outGlyphs Reference to the glyph buffer
+/// @return
 EXPORT_DLL ShapeText(
-    Context *ctx,                  // Context
-    FontHandle *fontHandle,        // Font index
-    Allocator allocator,           // Allocator
-    Buffer<char> *inText,          // Text sample to shape
-    Buffer<Text::Glyph> *outGlyphs // Reference to the glyph buffer
+    Context *ctx,
+    FontHandle *fontHandle,
+    Allocator allocator,
+    Buffer<char> *inText,
+    Buffer<Text::Glyph> *outGlyphs
 )
 {
     return ctx->ShapeText(fontHandle, allocator, inText, outGlyphs);
 };
 
+/// @brief Draws an atlas of glyphs into a texture
+/// @param ctx Context
+/// @param fontHandle Font index
+/// @param textureSize Texture size
+/// @param glyphSize Glyph size in pixels
+/// @param padding Padding between glyphs
+/// @param margin Margin between glyphs
+/// @param distanceMappingRange Distance mapping range
+/// @param glyphRenderFlags Glyph render flags
+/// @param compactFlags Compact flags
+/// @param allocator Allocator for the output glyph rects
+/// @param inText Text to shape
+/// @param refTexture Output texture pointer
+/// @param outGlyphPixelMetrics Output glyph rects
+/// @return
 EXPORT_DLL DrawAtlas(
-    Context *ctx,                                   // Context
-    FontHandle *fontHandle,                         // Font index
-    int textureSize,                                // Texture size
-    int glyphSize,                                  // Glyph size in pixels
-    int padding,                                    // Padding between glyphs
-    float distanceMappingRange,                     // Distance mapping range
-    int glyphRenderFlags,                           // Glyph render flags
-    int compactFlags,                               // Compact flags
-    Allocator allocator,                            // Allocator for the output glyph rects
-    Buffer<char> *inText,                           // Text to shape
-    Buffer<RGBA32Pixel> *refTexture,                // Output texture pointer
-    Buffer<GlyphMetrics> *outGlyphPixelMetrics // Output glyph rects
+    Context *ctx,
+    FontHandle *fontHandle,
+    int textureSize,
+    int glyphSize,
+    int padding,
+    int margin,
+    float distanceMappingRange,
+    int glyphRenderFlags,
+    int compactFlags,
+    Allocator allocator,
+    Buffer<char> *inText,
+    Buffer<RGBA32Pixel> *refTexture,
+    Buffer<GlyphMetrics> *outGlyphPixelMetrics
 )
 {
     return ctx->DrawAtlas(
@@ -91,6 +126,7 @@ EXPORT_DLL DrawAtlas(
         textureSize,
         glyphSize,
         padding,
+        margin,
         distanceMappingRange,
         glyphRenderFlags,
         compactFlags,

@@ -43,6 +43,7 @@ namespace Text
     {
         int size;
         int padding;
+        int margin;
         int compact_flags;
     };
 
@@ -62,6 +63,7 @@ namespace Text
         int Build()
         {
             auto padding = config.padding;
+            auto margin = config.margin;
             auto atlasSize = config.size;
 
             // Create an an array of glyph buffer indices
@@ -84,9 +86,9 @@ namespace Text
                 auto index = indices[i];
                 auto &glyph = glyphs[index];
 
-                // Add padding to glyph dimensions
-                glyph.atlas_width_px = glyph.atlas_width_px + (padding * 2);
-                glyph.atlas_height_px = glyph.atlas_height_px + (padding * 2);
+                // Add padding to glyph dimensions, we temporarily add margin for layout purposes
+                glyph.atlas_width_px = glyph.atlas_width_px + (padding * 2) + (margin * 2);
+                glyph.atlas_height_px = glyph.atlas_height_px + (padding * 2) + (margin * 2);
 
                 // Wrap excess items into new rows
                 if (rows[row].width + glyph.atlas_width_px > atlasSize)
@@ -154,19 +156,26 @@ namespace Text
             {
                 auto &row = rows[i];
                 auto x = 0;
-                auto itemMaxHeight = 0;
+                auto item_max_height = 0;
                 for (auto j = 0; j < row.items.size(); j++)
                 {
                     auto &index = row.items[j];
                     auto &glyph = glyphs[index];
+
                     glyph.atlas_x_px = x;
                     glyph.atlas_y_px = h;
+                    item_max_height = std::max(item_max_height, glyph.atlas_height_px);
                     x += glyph.atlas_width_px;
-                    itemMaxHeight = std::max(itemMaxHeight, glyph.atlas_height_px);
+                    
+                    // Remove margin from the glyph positioning
+                    glyph.atlas_x_px += config.margin;
+                    glyph.atlas_y_px += config.margin;
+                    glyph.atlas_width_px -= (config.margin * 2);
+                    glyph.atlas_height_px -= (config.margin * 2);
                 }
                 row.width = x;
-                row.height = itemMaxHeight;
-                h += itemMaxHeight;
+                row.height = item_max_height;
+                h += item_max_height;
             }
         }
     };

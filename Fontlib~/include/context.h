@@ -35,19 +35,19 @@ namespace Text
             FT_Done_FreeType(ftLib);
         }
 
-        ErrorCode LoadFont(Buffer<byte> inFontData, FontDescription *outFontDescription)
+        ReturnCode LoadFont(Buffer<byte> inFontData, FontDescription *outFontDescription)
         {
             *outFontDescription = FontDescription(ftLib, inFontData);
             return Success;
         }
 
-        ErrorCode UnloadFont(FontHandle *fontHandle)
+        ReturnCode UnloadFont(FontHandle *fontHandle)
         {
             fontHandle->Dispose();
             return Success;
         }
 
-        ErrorCode ShapeText(FontHandle *fontHandle, Allocator allocator, Buffer<char> *inText, Buffer<Glyph> *outGlyphs)
+        ReturnCode ShapeText(FontHandle *fontHandle, Allocator allocator, Buffer<char> *inText, Buffer<Glyph> *outGlyphs)
         {
             // Shape the text
             auto buffer = hb_buffer_create();
@@ -83,7 +83,7 @@ namespace Text
             // Clean up
             hb_buffer_destroy(buffer);
 
-            return ErrorCode::Success;
+            return ReturnCode::Success;
         }
 
         std::vector<int> ShapeText(FontHandle *fontHandle, Buffer<char> *inText)
@@ -115,11 +115,12 @@ namespace Text
             return result;
         }
 
-        ErrorCode DrawAtlas(
+        ReturnCode DrawAtlas(
             FontHandle *fontHandle,
             int textureSize,
             int glyphSize,
             int padding,
+            int margin,
             float distanceMappingRange,
             int glyphRenderFlags,
             int compactFlags,
@@ -150,7 +151,7 @@ namespace Text
             }
 
             // Prepare the atlas
-            auto atlasConfig = AtlasConfig{textureSize, padding, compactFlags};
+            auto atlasConfig = AtlasConfig{textureSize, padding, margin, compactFlags};
             auto atlas = AtlasBuilder(atlasConfig, glyphs);
             auto atlasResult = atlas.Build();
 
@@ -165,7 +166,7 @@ namespace Text
 
             *outGlyphMetrics = glyphs;
 
-            return Text::ErrorCode::Success;
+            return ReturnCode::Success;
         }
 
         Buffer<GlyphMetrics> CreateGlyphPixelMetricsBuffer(FontHandle *fontHandle, Allocator allocator, Buffer<char> *inText)
