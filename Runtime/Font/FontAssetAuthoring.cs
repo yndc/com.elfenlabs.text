@@ -1,10 +1,10 @@
-using UnityEngine;
-using Unity.Collections;
-using System.Collections.Generic;
-using Unity.Entities;
 using Elfenlabs.Collections;
-using UnityEditor;
+using System.Collections.Generic;
+using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Entities;
+using UnityEditor;
+using UnityEngine;
 
 namespace Elfenlabs.Text
 {

@@ -1,12 +1,8 @@
+using Elfenlabs.Collections;
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
-using Unity.Mathematics;
-using Unity.Entities;
 using UnityEngine;
-using Elfenlabs.Collections;
-
-
 
 #if UNITY_EDITOR
 using UnityEditor;

@@ -1,7 +1,6 @@
 using System;
 using Elfenlabs.Collections;
 using Unity.Entities;
-using Unity.Mathematics;
 using UnityEngine;
 
 namespace Elfenlabs.Text
