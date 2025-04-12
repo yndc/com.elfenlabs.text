@@ -130,7 +130,7 @@ Shader "Elfenlabs/Text-MTSDF"
                 // Sample MSDF texture
                 float4 msd = SAMPLE_TEXTURE2D_ARRAY(_MainTex, sampler_MainTex, IN.atlasUV, IN.texIndex);
                 float sd = median(msd.r, msd.g, msd.b);
-                
+
                 float screenPixelDist = fwidth(sd);
 
                 // Calculate smoothing range based on gradient and user control
@@ -140,33 +140,30 @@ Shader "Elfenlabs/Text-MTSDF"
                 // Distance from the glyph edge (threshold = _GlyphThreshold) in SDF units
                 float glyphDist = sd - _GlyphThreshold;
 
-                // Smooth transition across the distance 'smooth' around the threshold
+                // --- Calculate Base Glyph Alpha & Base Color Lerp Factor ---
+                // This determines both the base shape alpha and the point where color transitions
+                // Calculated always.
                 float glyphAlpha = smoothstep(-smooth, smooth, glyphDist);
+                float colorLerp = glyphAlpha; // Use base glyph transition for color blend
 
-                // Calculate outline alpha & color lerp
-                float outlineAlpha = 0.0;
-                float colorLerp = glyphAlpha; // Default to base glyph color if no outline
+                // --- Calculate Potential Outline Alpha (calculated always) ---
+                // Convert outline thickness (0..1 range) to SDF units offset from threshold
+                float outlineWidthSD = IN.outlineThickness * 0.5;
+                // Distance from the *outer edge* of the outline
+                // If thickness is 0, outlineWidthSD is 0, and outlineDist effectively equals glyphDist
+                float outlineDist = sd - (_GlyphThreshold - outlineWidthSD);
+                // Calculate alpha based on the outline distance. If thickness is 0, this yields glyphAlpha.
+                float potentialOutlineAlpha = smoothstep(-smooth, smooth, outlineDist);
 
-                // Only calculate outline if thickness > 0 (use epsilon for safety)
-                if (IN.outlineThickness > 0.001)
-                {
-                    // Convert outline thickness (0..1 range) to SDF units offset from threshold
-                    // Assumes thickness=1 maps to an offset of 0.5 SDF units (adjust if needed)
-                    float outlineWidthSD = IN.outlineThickness * 0.5;
-                    // Distance from the *outer edge* of the outline
-                    float outlineDist = sd - (_GlyphThreshold - outlineWidthSD);
-                    // Calculate outline alpha (smooth transition at the outer edge using the same screen-space 'smooth' range)
-                    outlineAlpha = smoothstep(-smooth, smooth, outlineDist);
+                // --- Determine Final Alpha without branching ---
+                // Use step to get 0 if thickness is ~0, and 1 if thickness is > 0.001
+                float outlineActive = step(0.001, IN.outlineThickness);
+                // Lerp between base alpha and potential outline alpha based on whether outline is active.
+                // If outlineActive=0, result is glyphAlpha.
+                // If outlineActive=1, result is potentialOutlineAlpha.
+                float combinedAlpha = lerp(glyphAlpha, potentialOutlineAlpha, outlineActive);
 
-                    // Determine color lerp factor: 0 = outline, 1 = base color
-                    // This transitions smoothly at the glyph's original threshold using the calculated 'smooth' range
-                    colorLerp = smoothstep(-smooth, smooth, glyphDist);
-                }
-
-                // Determine final alpha: if outline exists, it defines the max extent, otherwise use glyph alpha.
-                float combinedAlpha = (IN.outlineThickness > 0.001) ? outlineAlpha : glyphAlpha;
-
-                // Lerp between outline and base color based on glyph threshold crossing
+                // --- Blend Colors (always uses the base glyph edge transition) ---
                 float3 blendedColor = lerp(IN.outlineColor.rgb, IN.baseColor.rgb, colorLerp);
 
                 // Apply base color alpha (from vertex/material color) to the final alpha
