@@ -1,9 +1,9 @@
 using UnityEngine;
 using Unity.Entities;
-using Unity.Collections;
 using Elfenlabs.String;
 using System;
 using Unity.Transforms;
+using Unity.Mathematics;
 
 namespace Elfenlabs.Text
 {
@@ -42,7 +42,9 @@ namespace Elfenlabs.Text
             StringUtility.CopyToDynamicBuffer(authoring.Text, buffer);
             AddSharedComponentManaged(entity, new FontAssetPreBakeReference { Value = authoring.Font });
             AddComponent(entity, new Parent());
-            AddComponent(entity, new TextFontWorldSize { Value = authoring.FontSize });
+            AddComponent(entity, new TextSizeData { Value = authoring.FontSize });
+            AddComponent(entity, new TextLayoutMaxSize { Value = new float2(0f, 0f) });
+            AddComponent(entity, new TextLayoutBreakRule { Value = BreakRule.Word });
         }
     }
 }

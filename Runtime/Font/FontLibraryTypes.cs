@@ -53,6 +53,7 @@ namespace Elfenlabs.Text
     public struct ShapingGlyph
     {
         public int CodePoint;
+        public int Cluster;
         public int XOffset;
         public int YOffset;
         public int XAdvance;

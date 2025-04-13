@@ -17,7 +17,7 @@ namespace Elfenlabs.Text
 
     }
 
-    public struct TextFontWorldSize : IComponentData
+    public struct TextSizeData : IComponentData
     {
         public float Value;
     }

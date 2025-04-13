@@ -73,7 +73,8 @@ namespace Text
             for (unsigned int i = 0; i < glyphCount; ++i)
             {
                 auto ptr = &(*outGlyphs)[i];
-                ptr->index = glyphInfo[i].codepoint;
+                ptr->codepoint = glyphInfo[i].codepoint;
+                ptr->cluster = glyphInfo[i].cluster;
                 ptr->offset_x_fu = glyphPos[i].x_offset;
                 ptr->offset_y_fu = glyphPos[i].y_offset;
                 ptr->advance_x_fu = glyphPos[i].x_advance;
@@ -109,8 +110,6 @@ namespace Text
 
             // Clean up
             hb_buffer_destroy(buffer);
-
-            Log() << "Shaped " << glyphCount << " glyphs";
 
             return result;
         }

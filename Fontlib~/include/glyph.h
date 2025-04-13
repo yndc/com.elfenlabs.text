@@ -7,7 +7,8 @@ namespace Text
 {
     struct Glyph
     {
-        int32_t index;
+        int32_t codepoint;
+        int32_t cluster;
         int32_t offset_x_fu;
         int32_t offset_y_fu;
         int32_t advance_x_fu;
