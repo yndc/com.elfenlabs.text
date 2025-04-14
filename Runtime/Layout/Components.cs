@@ -25,4 +25,20 @@ namespace Elfenlabs.Text
     {
         public BreakRule Value;
     }
+
+    public struct TextLayoutGlyphRuntimeBuffer : IBufferElementData
+    {
+        public Entity Entity;
+        public float2 PositionEm;
+        public float2 AdvanceEm;
+        public float2 OffsetEm;
+        public float2 RealSizeEm;
+        public float2 QuadSizeEm;
+        public int Cluster;
+    }
+
+    public struct TextLayoutRequireUpdate : IComponentData, IEnableableComponent
+    {
+
+    }
 }

@@ -14,6 +14,12 @@ namespace Elfenlabs.Text
         public string Text;
 
         public float FontSize = 1f;
+
+        public float LineHeight = 1f;
+
+        public float MaxWidth = 0f;
+
+        public BreakRule BreakRule = BreakRule.Word;
     }
 
     public struct FontAssetPreBakeReference : ISharedComponentData, IEquatable<FontAssetPreBakeReference>
@@ -38,13 +44,15 @@ namespace Elfenlabs.Text
             DependsOn(authoring.Font);
 
             var entity = GetEntity(TransformUsageFlags.Dynamic);
-            var buffer = AddBuffer<TextBufferData>(entity);
+            var buffer = AddBuffer<TextStringBuffer>(entity);
             StringUtility.CopyToDynamicBuffer(authoring.Text, buffer);
             AddSharedComponentManaged(entity, new FontAssetPreBakeReference { Value = authoring.Font });
             AddComponent(entity, new Parent());
-            AddComponent(entity, new TextSizeData { Value = authoring.FontSize });
-            AddComponent(entity, new TextLayoutMaxSize { Value = new float2(0f, 0f) });
+            AddComponent(entity, new TextFontSize { Value = authoring.FontSize });
+            AddComponent(entity, new TextLayoutMaxSize { Value = new float2(authoring.MaxWidth, 0f) });
             AddComponent(entity, new TextLayoutBreakRule { Value = BreakRule.Word });
+            AddComponent(entity, new TextLayoutRequireUpdate());
+            SetComponentEnabled<TextLayoutRequireUpdate>(entity, true);
         }
     }
 }

@@ -5,19 +5,14 @@ using Unity.Collections;
 
 namespace Elfenlabs.Text
 {
-    public struct TextBufferData : IBufferElementData
+    public struct TextStringBuffer : IBufferElementData
     {
         public byte Value;
-        public static implicit operator TextBufferData(byte value) => new TextBufferData { Value = value };
-        public static implicit operator byte(TextBufferData textBuffer) => textBuffer.Value;
+        public static implicit operator TextStringBuffer(byte value) => new TextStringBuffer { Value = value };
+        public static implicit operator byte(TextStringBuffer textBuffer) => textBuffer.Value;
     }
 
-    public struct TextShapedTag : IComponentData
-    {
-
-    }
-
-    public struct TextSizeData : IComponentData
+    public struct TextFontSize : IComponentData
     {
         public float Value;
     }
