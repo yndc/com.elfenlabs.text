@@ -1,23 +1,22 @@
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Entities;
+using UnityEngine;
 
 namespace Elfenlabs.Text
 {
     [WorldSystemFilter(WorldSystemFilterFlags.BakingSystem)]
     public partial struct FontAssetBakingSystem : ISystem
     {
-        EntityQuery preBakeReferenceQuery;
-
-        void OnCreate(ref SystemState state)
-        {
-            preBakeReferenceQuery = state.GetEntityQuery(ComponentType.ReadOnly<FontAssetPreBakeReference>());
-        }
-
         void OnUpdate(ref SystemState state)
         {
             var list = new List<FontAssetPreBakeReference>();
+            var preBakeReferenceQuery = SystemAPI.QueryBuilder()
+                .WithAll<FontAssetPreBakeReference>()
+                .Build();
+
             state.EntityManager.GetAllUniqueSharedComponentsManaged(list);
+
             foreach (var fontAssetReference in list)
             {
                 if (fontAssetReference.Value == null)
