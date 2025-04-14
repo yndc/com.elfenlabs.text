@@ -20,6 +20,8 @@ namespace Elfenlabs.Text
         public float MaxWidth = 0f;
 
         public BreakRule BreakRule = BreakRule.Word;
+
+        public TextAlign Align = TextAlign.Left;
     }
 
     public struct FontAssetPreBakeReference : ISharedComponentData, IEquatable<FontAssetPreBakeReference>
@@ -51,6 +53,7 @@ namespace Elfenlabs.Text
             AddComponent(entity, new TextFontSize { Value = authoring.FontSize });
             AddComponent(entity, new TextLayoutMaxSize { Value = new float2(authoring.MaxWidth, 0f) });
             AddComponent(entity, new TextLayoutBreakRule { Value = BreakRule.Word });
+            AddComponent(entity, new TextLayoutAlign { Value = authoring.Align });
             AddComponent(entity, new TextLayoutRequireUpdate());
             SetComponentEnabled<TextLayoutRequireUpdate>(entity, true);
         }

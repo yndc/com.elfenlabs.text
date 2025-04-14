@@ -10,10 +10,26 @@ namespace Elfenlabs.Text
         Character = 2,
     }
 
+    public enum TextAlign
+    {
+        Left = 0,
+        Center = 1,
+        Right = 2,
+        Justify = 3,
+    }
+
     /// <summary>
     /// Maximum text layout size in world space, 0 means no limit
     /// </summary>
     public struct TextLayoutMaxSize : IComponentData
+    {
+        public float2 Value;
+    }
+
+    /// <summary>
+    /// Minimal rect that contains the text layout in world space
+    /// </summary>
+    public struct TextLayoutSizeRuntime : IComponentData
     {
         public float2 Value;
     }
@@ -26,6 +42,14 @@ namespace Elfenlabs.Text
         public BreakRule Value;
     }
 
+    /// <summary>
+    /// Text alignment in the text layout
+    /// </summary>
+    public struct TextLayoutAlign : IComponentData
+    {
+        public TextAlign Value;
+    }
+
     public struct TextLayoutGlyphRuntimeBuffer : IBufferElementData
     {
         public Entity Entity;
@@ -35,6 +59,7 @@ namespace Elfenlabs.Text
         public float2 RealSizeEm;
         public float2 QuadSizeEm;
         public int Cluster;
+        public int Line;
     }
 
     public struct TextLayoutRequireUpdate : IComponentData, IEnableableComponent

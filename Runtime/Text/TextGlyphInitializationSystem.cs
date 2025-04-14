@@ -3,6 +3,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
+using UnityEngine;
 
 namespace Elfenlabs.Text
 {
@@ -45,6 +46,7 @@ namespace Elfenlabs.Text
             )
             {
                 var runtimeGlyphs = ECB.AddBuffer<TextLayoutGlyphRuntimeBuffer>(chunkIndexInQuery, entity);
+                ECB.AddComponent<TextLayoutSizeRuntime>(chunkIndexInQuery, entity);
 
                 // Generate glyphs for each character in the string
                 FontLibrary.ShapeText(
@@ -74,6 +76,8 @@ namespace Elfenlabs.Text
                         // Real size is the real size of the glyph itself without padding
                         var realSize = new float2(glyphInfo.Metrics.WidthFontUnits, glyphInfo.Metrics.HeightFontUnits) * fontUnitsToEm;
                         var quadSize = realSize + (2f * fontAssetData.Padding * atlasPixelToEm);
+
+                        Debug.Log("Glyph: " + glyphShape[i].CodePoint + " - " + glyphInfo.Metrics.LeftFontUnits + " - " + glyphInfo.Metrics.TopFontUnits + " - " + glyphInfo.Metrics.WidthFontUnits + " - " + glyphInfo.Metrics.HeightFontUnits);
 
                         var glyphEntity = ECB.Instantiate(chunkIndexInQuery, fontRuntimeData.PrototypeEntity);
 
