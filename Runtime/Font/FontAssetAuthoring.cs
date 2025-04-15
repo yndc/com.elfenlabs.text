@@ -29,7 +29,7 @@ namespace Elfenlabs.Text
         public List<string> Ligatures;
 
         [Header("Result")]
-        public Texture2DArray Texture;
+        public Texture2DArray TextureArray;
 
         [ReadOnly]
         public List<GlyphMetrics> Glyphs;
@@ -47,7 +47,7 @@ namespace Elfenlabs.Text
             for (int i = 0; i < Glyphs.Count; i++)
             {
                 var glyph = Glyphs[i];
-                map.Add(glyph.CodePoint, new GlyphRuntimeData(glyph, GlyphSize, AtlasSize));
+                map.Add(glyph.CodePoint, new GlyphRuntimeData(glyph, AtlasSize));
             }
 
             glyphRectMap.Flatten(glyphMapBuilder, map);

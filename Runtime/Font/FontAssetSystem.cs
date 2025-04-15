@@ -83,7 +83,7 @@ namespace Elfenlabs.Text
                     runtimeData = new FontAssetRuntimeData
                     {
                         Description = fontDesc,
-                        GlyphRectMap = assetData.FlattenedGlyphMap.Value.Reconstruct(Allocator.Persistent),
+                        GlyphMap = assetData.FlattenedGlyphMap.Value.Reconstruct(Allocator.Persistent),
                         PrototypeEntity = AdaptPrefab(ref state, ecb, quadPrototype, assetData.Material),
                     };
 
@@ -113,7 +113,7 @@ namespace Elfenlabs.Text
 
         void DisposeAssetRuntime(ref SystemState state, EntityCommandBuffer ecb, FontAssetRuntimeData runtimeData)
         {
-            runtimeData.GlyphRectMap.Dispose();
+            runtimeData.GlyphMap.Dispose();
             ecb.DestroyEntity(runtimeData.PrototypeEntity);
             var pluginHandle = SystemAPI.GetSingleton<FontPluginRuntimeHandle>().Value;
             FontLibrary.UnloadFont(pluginHandle, runtimeData.Description.Handle);

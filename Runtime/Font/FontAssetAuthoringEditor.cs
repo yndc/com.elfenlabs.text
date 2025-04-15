@@ -109,13 +109,13 @@ namespace Elfenlabs.Text
 
             // Generate atlas texture
             var stringBuffer = NativeBuffer<byte>.FromString(str, Allocator.Temp);
-            var texture = self.Texture;
+            var textureArray = self.TextureArray;
             var fontDescription = LoadFont();
-            var textureBuffer = NativeBuffer<Color32>.Alias(texture.GetPixelData<Color32>(0, 0));
+            var textureBuffer = NativeBuffer<Color32>.Alias(textureArray.GetPixelData<Color32>(0, 0));
             FontLibrary.DrawAtlas(
                 libCtx,
                 fontDescription.Handle,
-                texture.width,
+                textureArray.width,
                 self.GlyphSize,
                 self.Padding,
                 self.Margin,
@@ -127,7 +127,7 @@ namespace Elfenlabs.Text
                 ref textureBuffer,
                 out NativeBuffer<GlyphMetrics> glyphsBuffer
             );
-            texture.Apply();
+            textureArray.Apply();
 
             // Generate material
             if (self.Material == null)
@@ -138,7 +138,7 @@ namespace Elfenlabs.Text
                 };
                 AssetDatabase.AddObjectToAsset(self.Material, self);
             }
-            self.Material.SetTexture("_MainTex", texture);
+            self.Material.SetTexture("_MainTex", textureArray);
 
             EditorUtility.SetDirty(target);
             AssetDatabase.SaveAssets();
@@ -158,10 +158,10 @@ namespace Elfenlabs.Text
 
         public void ClearTexture()
         {
-            if (self.Texture != null)
+            if (self.TextureArray != null)
             {
-                AssetDatabase.RemoveObjectFromAsset(self.Texture);
-                DestroyImmediate(self.Texture);
+                AssetDatabase.RemoveObjectFromAsset(self.TextureArray);
+                DestroyImmediate(self.TextureArray);
             }
 
             var textureArray = new Texture2DArray(self.AtlasSize, self.AtlasSize, 1, TextureFormat.RGBA32, false);
@@ -173,7 +173,7 @@ namespace Elfenlabs.Text
             textureArray.name = "FontAtlas";
             textureArray.Apply();
 
-            self.Texture = textureArray;
+            self.TextureArray = textureArray;
             EditorUtility.SetDirty(target);
             AssetDatabase.AddObjectToAsset(textureArray, self);
             AssetDatabase.SaveAssets();

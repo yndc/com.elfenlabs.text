@@ -24,7 +24,7 @@ namespace Elfenlabs.Text
         public int CodePoint;
         public float4 AtlasUV;
         public GlyphMetrics Metrics;
-        public GlyphRuntimeData(GlyphMetrics pixelMetrics, float glyphSize, float atlasSize)
+        public GlyphRuntimeData(GlyphMetrics pixelMetrics, float atlasSize)
         {
             Metrics = pixelMetrics;
             CodePoint = pixelMetrics.CodePoint;
@@ -34,9 +34,6 @@ namespace Elfenlabs.Text
                     pixelMetrics.AtlasWidthPx / atlasSize,
                     pixelMetrics.AtlasHeightPx / atlasSize
             );
-            // TopEM = pixelMetrics.TopFontUnits / (glyphSize * 64f);
-            // TopEM = (pixelMetrics.TopFracPx >> 6) / glyphSize;
-            // LeftEM = pixelMetrics.LeftFontUnits / (glyphSize * 64f);
         }
     }
 }
