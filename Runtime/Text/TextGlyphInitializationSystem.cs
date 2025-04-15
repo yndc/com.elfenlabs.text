@@ -22,10 +22,12 @@ namespace Elfenlabs.Text
             if (initializationQuery.IsEmpty)
                 return;
 
+            var missingGlyphSet = SystemAPI.GetSingleton<FontMissingGlyphHandlingSystem.MissingGlyphSet>().Value;
             var ecb = SystemAPI.GetSingleton<EndInitializationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
             var initializationJob = new TextGlyphInitializationJob
             {
                 ECB = ecb.AsParallelWriter(),
+                MissingGlyphSet = missingGlyphSet.AsParallelWriter(),
                 FontPluginHandle = SystemAPI.GetSingleton<FontPluginRuntimeHandle>(),
             };
 
@@ -35,6 +37,7 @@ namespace Elfenlabs.Text
         partial struct TextGlyphInitializationJob : IJobEntity
         {
             public EntityCommandBuffer.ParallelWriter ECB;
+            public NativeParallelHashSet<int>.ParallelWriter MissingGlyphSet;
             public FontPluginRuntimeHandle FontPluginHandle;
 
             public void Execute(
@@ -63,7 +66,7 @@ namespace Elfenlabs.Text
                 var realGlyphCounter = 0; // Since not all glyphs are found in the font asset
                 for (int i = 0; i < glyphShape.Count(); i++)
                 {
-                    if (fontRuntimeData.GlyphRectMap.TryGetValue(glyphShape[i].CodePoint, out var glyphInfo))
+                    if (fontRuntimeData.GlyphMap.TryGetValue(glyphShape[i].CodePoint, out var glyphInfo))
                     {
                         // Calculate runtime values in em units
                         var advance = new float2(glyphShape[i].XAdvance, glyphShape[i].YAdvance) * fontUnitsToEm;
@@ -105,6 +108,10 @@ namespace Elfenlabs.Text
                         };
 
                         realGlyphCounter++;
+                    }
+                    else
+                    {
+                        MissingGlyphSet.Add(glyphShape[i].CodePoint);
                     }
                 }
 

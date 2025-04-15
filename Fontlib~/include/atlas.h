@@ -10,6 +10,11 @@
 
 namespace Text
 {
+    class SkylineAtlas 
+    {
+
+    };
+    
     struct Row
     {
         int height;
