@@ -143,16 +143,19 @@ namespace Text
                 auto units_per_em = face->units_per_EM;
                 glyph.width_fu = metrics.width;
                 glyph.height_fu = metrics.height;
-                glyph.atlas_width_px = metrics.width * glyphSize / units_per_em;
-                glyph.atlas_height_px = metrics.height * glyphSize / units_per_em;
                 glyph.left_fu = metrics.horiBearingX;
                 glyph.top_fu = metrics.horiBearingY;
+                glyph.atlas_width_px = (metrics.width * glyphSize / units_per_em) + 2 * padding;
+                glyph.atlas_height_px = (metrics.height * glyphSize / units_per_em) + 2 * padding;
             }
 
             // Prepare the atlas
-            auto atlasConfig = AtlasConfig{textureSize, padding, margin, compactFlags};
-            auto atlas = AtlasBuilder(atlasConfig, glyphs);
-            auto atlasResult = atlas.Build();
+            auto atlasConfig = DynamicAtlasPacker::Config{textureSize, margin};
+            auto atlas = new DynamicAtlasPacker(atlasConfig);
+            auto packed = atlas->PackGlyphs(glyphs);
+
+            auto left = glyphs.Count() - packed;
+            Log() << "Packed " << packed << " glyphs, " << left << " left";
 
             // Draw the atlas
             for (int i = 0; i < glyphs.Count(); i++)
