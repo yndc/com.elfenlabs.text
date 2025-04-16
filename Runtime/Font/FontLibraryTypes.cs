@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace Elfenlabs.Text
 {
-    public enum ErrorCode
+    public enum ReturnCode
     {
         Success,
 
@@ -31,6 +31,46 @@ namespace Elfenlabs.Text
         FillEnd = 1 << 0,
         Gravity = 1 << 1,
         ZigZag = 1 << 2,
+    }
+
+    [Serializable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct AtlasConfig : IEquatable<AtlasConfig>
+    {
+        // Width and Height of the square atlas slice
+        public int Size;
+
+        // Padding around each glyph in pixels
+        public int Padding;
+
+        // Minimum distance between packed rectangles and the atlas border.
+        public int Margin;
+
+        // Size of the glyph in pixels (used for scaling)
+        public int GlyphSize;
+        
+        public int Flags;
+
+        public readonly bool Equals(AtlasConfig other)
+        {
+            return Size == other.Size && Padding == other.Padding && Margin == other.Margin && GlyphSize == other.GlyphSize && Flags == other.Flags;
+        }
+
+        public override readonly int GetHashCode()
+        {
+            return HashCode.Combine(Size, Padding, Margin, GlyphSize, Flags);
+        }
+    };
+
+    [Serializable]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RenderConfig
+    {
+        // Distance mapping range (in pixels) for the MSDF font
+        public float DistanceMappingRange;
+
+        // Flags for rendering the glyphs
+        public GlyphRenderFlags Flags;
     }
 
     [Serializable]
