@@ -14,7 +14,7 @@ namespace Elfenlabs.Text
         {
             var layoutTransformQuery = SystemAPI.QueryBuilder()
                 .WithAllRW<TextLayoutRequireUpdate>()
-                .WithAll<TextLayoutGlyphRuntimeBuffer>()
+                .WithAll<TextGlyphBuffer>()
                 .WithAll<TextFontSize>()
                 .Build();
 
@@ -41,7 +41,7 @@ namespace Elfenlabs.Text
 
             public void Execute(
                 Entity entity,
-                in DynamicBuffer<TextLayoutGlyphRuntimeBuffer> textGlyphs,
+                in DynamicBuffer<TextGlyphBuffer> textGlyphs,
                 in TextFontSize textFontWorldSize
             )
             {

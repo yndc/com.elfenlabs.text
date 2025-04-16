@@ -11,8 +11,9 @@ namespace Elfenlabs.Text
         void OnUpdate(ref SystemState state)
         {
             var changedTextQuery = SystemAPI.QueryBuilder()
+                .WithPresent<TextGlyphRequireUpdate>()
                 .WithAll<TextStringBuffer>()
-                .WithAll<TextLayoutGlyphRuntimeBuffer>()
+                .WithAll<TextGlyphBuffer>()
                 .Build();
 
             changedTextQuery.SetChangedVersionFilter(ComponentType.ReadOnly<TextStringBuffer>());
@@ -20,40 +21,7 @@ namespace Elfenlabs.Text
             if (changedTextQuery.IsEmpty)
                 return;
 
-            var ecb = new EntityCommandBuffer(Allocator.TempJob);
-            var textStringChangeJob = new TextStringChangeJob
-            {
-                ECB = ecb.AsParallelWriter(),
-            };
-
-            state.Dependency = textStringChangeJob.ScheduleParallel(changedTextQuery, state.Dependency);
-            state.Dependency.Complete();
-            ecb.Playback(state.EntityManager);
-            ecb.Dispose();
-        }
-
-        partial struct TextStringChangeJob : IJobEntity
-        {
-            public EntityCommandBuffer.ParallelWriter ECB;
-
-            public void Execute(
-                [ChunkIndexInQuery] int chunkIndexInQuery,
-                Entity entity,
-                ref DynamicBuffer<TextLayoutGlyphRuntimeBuffer> textGlyphs,
-                in DynamicBuffer<TextStringBuffer> textString)
-            {
-                // Update the glyphs based on the new string
-                // For now we completely clear the glyphs and reinitialize them
-                // Optimally we should only update the changed parts of the string
-
-                foreach (var glyph in textGlyphs)
-                {
-                    ECB.DestroyEntity(chunkIndexInQuery, glyph.Entity);
-                }
-
-                ECB.RemoveComponent<TextLayoutGlyphRuntimeBuffer>(chunkIndexInQuery, entity);
-                ECB.SetComponentEnabled<TextLayoutRequireUpdate>(chunkIndexInQuery, entity, true);
-            }
+            state.EntityManager.SetComponentEnabled<TextGlyphRequireUpdate>(changedTextQuery, true);
         }
     }
 }

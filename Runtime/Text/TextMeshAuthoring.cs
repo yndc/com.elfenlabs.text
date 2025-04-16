@@ -33,13 +33,17 @@ namespace Elfenlabs.Text
             var entity = GetEntity(TransformUsageFlags.Dynamic);
             var buffer = AddBuffer<TextStringBuffer>(entity);
             StringUtility.CopyToDynamicBuffer(authoring.Text, buffer);
+            AddBuffer<TextGlyphBuffer>(entity);
             AddComponent(entity, new Parent());
             AddComponent(entity, new TextFontSize { Value = authoring.FontSize });
+            AddComponent(entity, new TextLayoutSizeRuntime());
             AddComponent(entity, new TextLayoutMaxSize { Value = new float2(authoring.MaxWidth, 0f) });
             AddComponent(entity, new TextLayoutBreakRule { Value = BreakRule.Word });
             AddComponent(entity, new TextLayoutAlign { Value = authoring.Align });
             AddComponent(entity, new TextLayoutRequireUpdate());
+            AddComponent(entity, new TextGlyphRequireUpdate());
             SetComponentEnabled<TextLayoutRequireUpdate>(entity, true);
+            SetComponentEnabled<TextGlyphRequireUpdate>(entity, true);
 
             var fontAssetHash = new Unity.Entities.Hash128((uint)authoring.Font.GetHashCode(), 0, 0, 0);
             if (!TryGetBlobAssetReference<FontAssetData>(fontAssetHash, out var fontAssetData))

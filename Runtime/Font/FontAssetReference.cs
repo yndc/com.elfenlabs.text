@@ -26,6 +26,7 @@ namespace Elfenlabs.Text
         public BlobArray<byte> FontBytes;
         public BlobArray<byte> SerializedAtlasState;
         public AtlasConfig AtlasConfig;
+        public RenderConfig RenderConfig;
         public UnityObjectRef<Material> Material;
     }
 }

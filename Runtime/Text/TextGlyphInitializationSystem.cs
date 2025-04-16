@@ -13,22 +13,24 @@ namespace Elfenlabs.Text
         void OnUpdate(ref SystemState state)
         {
             var initializationQuery = SystemAPI.QueryBuilder()
+                .WithPresentRW<TextLayoutRequireUpdate>()
+                .WithAllRW<TextGlyphRequireUpdate>()
+                .WithAllRW<TextGlyphBuffer>()
                 .WithAll<TextStringBuffer>()
                 .WithAll<FontAssetReference>()
                 .WithAll<FontAssetRuntimeData>()
-                .WithNone<TextLayoutGlyphRuntimeBuffer>()
                 .Build();
 
             if (initializationQuery.IsEmpty)
                 return;
 
-            var missingGlyphSet = SystemAPI.GetSingleton<FontMissingGlyphHandlingSystem.MissingGlyphSet>().Value;
             var ecb = SystemAPI.GetSingleton<EndInitializationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
             var initializationJob = new TextGlyphInitializationJob
             {
                 ECB = ecb.AsParallelWriter(),
-                MissingGlyphSet = missingGlyphSet.AsParallelWriter(),
                 FontPluginHandle = SystemAPI.GetSingleton<FontPluginRuntimeHandle>(),
+                GlyphRequireUpdateLookup = SystemAPI.GetComponentLookup<TextGlyphRequireUpdate>(),
+                LayoutRequireUpdateLookup = SystemAPI.GetComponentLookup<TextLayoutRequireUpdate>()
             };
 
             state.Dependency = initializationJob.ScheduleParallel(initializationQuery, state.Dependency);
@@ -37,19 +39,30 @@ namespace Elfenlabs.Text
         partial struct TextGlyphInitializationJob : IJobEntity
         {
             public EntityCommandBuffer.ParallelWriter ECB;
-            public NativeParallelHashSet<int>.ParallelWriter MissingGlyphSet;
             public FontPluginRuntimeHandle FontPluginHandle;
+            [NativeDisableParallelForRestriction]
+            public ComponentLookup<TextGlyphRequireUpdate> GlyphRequireUpdateLookup;
+            [NativeDisableParallelForRestriction]
+            public ComponentLookup<TextLayoutRequireUpdate> LayoutRequireUpdateLookup;
 
             public void Execute(
                 Entity entity,
                 [ChunkIndexInQuery] int chunkIndexInQuery,
+                ref DynamicBuffer<TextGlyphBuffer> textGlyphs,
                 in DynamicBuffer<TextStringBuffer> textStringBuffer,
                 in FontAssetReference fontAssetData,
                 in FontAssetRuntimeData fontRuntimeData
             )
             {
-                var runtimeGlyphs = ECB.AddBuffer<TextLayoutGlyphRuntimeBuffer>(chunkIndexInQuery, entity);
-                ECB.AddComponent<TextLayoutSizeRuntime>(chunkIndexInQuery, entity);
+                GlyphRequireUpdateLookup.SetComponentEnabled(entity, false);
+                LayoutRequireUpdateLookup.SetComponentEnabled(entity, true);
+
+                foreach (var glyph in textGlyphs)
+                {
+                    ECB.DestroyEntity(chunkIndexInQuery, glyph.Entity);
+                }
+
+                textGlyphs.Clear();
 
                 // Generate glyphs for each character in the string
                 FontLibrary.ShapeText(
@@ -59,11 +72,8 @@ namespace Elfenlabs.Text
                     textStringBuffer.AsNativeBuffer().ReinterpretCast<TextStringBuffer, byte>(),
                     out var glyphShape);
 
-                runtimeGlyphs.ResizeUninitialized(glyphShape.Count());
-
                 var atlasPixelToEm = 1f / fontAssetData.Value.Value.AtlasConfig.GlyphSize;
                 var fontUnitsToEm = 1f / fontRuntimeData.Description.UnitsPerEM;
-                var realGlyphCounter = 0; // Since not all glyphs are found in the font asset
                 for (int i = 0; i < glyphShape.Count(); i++)
                 {
                     if (fontRuntimeData.GlyphMap.TryGetValue(glyphShape[i].CodePoint, out var glyphInfo))
@@ -97,26 +107,23 @@ namespace Elfenlabs.Text
                         ECB.AddComponent(chunkIndexInQuery, glyphEntity, new MaterialPropertyGlyphOutlineThickness { Value = 0.0f });
                         ECB.AddComponent(chunkIndexInQuery, glyphEntity, new MaterialPropertyGlyphOutlineColor { Value = new float4(0f, 0f, 0f, 1f) });
 
-                        runtimeGlyphs[realGlyphCounter] = new TextLayoutGlyphRuntimeBuffer
+                        ECB.AppendToBuffer(chunkIndexInQuery, entity, new TextGlyphBuffer
                         {
+                            Entity = glyphEntity,
                             Cluster = glyphShape[i].Cluster,
+                            PositionEm = float2.zero,
+                            Line = 0,
                             AdvanceEm = advance,
                             OffsetEm = shapeOffset + bearingOffset,
                             RealSizeEm = realSize,
                             QuadSizeEm = quadSize,
-                            Entity = glyphEntity
-                        };
-
-                        realGlyphCounter++;
+                        });
                     }
                     else
                     {
-                        MissingGlyphSet.Add(glyphShape[i].CodePoint);
+                        fontRuntimeData.MissingGlyphSet.Add(glyphShape[i].CodePoint);
                     }
                 }
-
-                // Resize the buffer to the actual number of glyphs created
-                runtimeGlyphs.ResizeUninitialized(realGlyphCounter);
             }
         }
     }

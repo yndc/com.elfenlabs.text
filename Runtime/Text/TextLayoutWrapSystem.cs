@@ -13,7 +13,7 @@ namespace Elfenlabs.Text
         void OnUpdate(ref SystemState state)
         {
             var wrapQuery = SystemAPI.QueryBuilder()
-               .WithAllRW<TextLayoutGlyphRuntimeBuffer>()
+               .WithAllRW<TextGlyphBuffer>()
                .WithAllRW<TextLayoutSizeRuntime>()
                .WithAll<FontAssetRuntimeData>()
                .WithAll<TextStringBuffer>()
@@ -31,7 +31,7 @@ namespace Elfenlabs.Text
         {
             public void Execute(
                 Entity entity,
-                ref DynamicBuffer<TextLayoutGlyphRuntimeBuffer> textGlyphs,
+                ref DynamicBuffer<TextGlyphBuffer> textGlyphs,
                 ref TextLayoutSizeRuntime textLayoutSize,
                 in FontAssetRuntimeData fontRuntimeData,
                 in DynamicBuffer<TextStringBuffer> textString,

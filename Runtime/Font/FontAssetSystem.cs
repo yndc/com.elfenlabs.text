@@ -1,9 +1,11 @@
+using System;
 using Elfenlabs.Collections;
 using Elfenlabs.Entities;
 using Elfenlabs.Mesh;
 using Elfenlabs.Rendering;
 using Elfenlabs.Unsafe;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Rendering;
@@ -75,24 +77,7 @@ namespace Elfenlabs.Text
                 var assetData = chunk.GetSharedComponent(assetDataTypeHandle);
                 if (!runtimeAssetMap.TryGetValue(assetData, out var runtimeData))
                 {
-                    FontLibrary.LoadFont(
-                        pluginHandle,
-                        assetData.Value.Value.FontBytes.AsNativeBuffer(),
-                        out var fontDesc);
-
-                    FontLibrary.AtlasDeserialize(
-                        pluginHandle, 
-                        assetData.Value.Value.SerializedAtlasState.AsNativeBuffer(), 
-                        out var atlasHandle);
-
-                    runtimeData = new FontAssetRuntimeData
-                    {
-                        Description = fontDesc,
-                        GlyphMap = assetData.Value.Value.FlattenedGlyphMap.Reconstruct(Allocator.Persistent),
-                        PrototypeEntity = AdaptPrefab(ref state, ecb, quadPrototype, assetData.Value.Value.Material),
-                        AtlasHandle = atlasHandle,
-                    };
-
+                    runtimeData = CreateAssetRuntime(ref state, ecb, pluginHandle, assetData);
                     runtimeAssetMap.Add(assetData, runtimeData);
                     runtimeAssetCounter.Increment(runtimeData, chunk.Count);
                 }
@@ -117,18 +102,43 @@ namespace Elfenlabs.Text
             ecb.RemoveComponent<FontAssetRuntimeData>(assetCleanupQuery, EntityQueryCaptureMode.AtPlayback);
         }
 
+        FontAssetRuntimeData CreateAssetRuntime(ref SystemState state, EntityCommandBuffer ecb, IntPtr pluginHandle, FontAssetReference assetRef)
+        {
+            FontLibrary.LoadFont(
+                        pluginHandle,
+                        assetRef.Value.Value.FontBytes.AsNativeBuffer(),
+                        out var fontDesc);
+
+            FontLibrary.AtlasDeserialize(
+                pluginHandle,
+                assetRef.Value.Value.SerializedAtlasState.AsNativeBuffer(),
+                out var atlasHandle);
+
+            return new FontAssetRuntimeData
+            {
+                AssetReference = assetRef.Value,
+                Description = fontDesc,
+                GlyphMap = assetRef.Value.Value.FlattenedGlyphMap.Reconstruct(Allocator.Persistent),
+                PrototypeEntity = AdaptPrefab(ref state, ecb, quadPrototype, assetRef.Value.Value.Material, out var batchMaterialID),
+                AtlasHandle = atlasHandle,
+                MissingGlyphSet = new UnsafeParallelHashSet<int>(32, Allocator.Persistent),
+                MaterialID = batchMaterialID,
+            };
+        }
+
         void DisposeAssetRuntime(ref SystemState state, EntityCommandBuffer ecb, FontAssetRuntimeData runtimeData)
         {
             runtimeData.GlyphMap.Dispose();
+            runtimeData.MissingGlyphSet.Dispose();
             ecb.DestroyEntity(runtimeData.PrototypeEntity);
             var pluginHandle = SystemAPI.GetSingleton<FontPluginRuntimeHandle>().Value;
             FontLibrary.UnloadFont(pluginHandle, runtimeData.Description.Handle);
         }
 
-        readonly Entity AdaptPrefab(ref SystemState state, EntityCommandBuffer ecb, Entity original, UnityObjectRef<Material> material)
+        readonly Entity AdaptPrefab(ref SystemState state, EntityCommandBuffer ecb, Entity original, UnityObjectRef<Material> material, out BatchMaterialID batchMaterialID)
         {
             var prototype = ecb.Instantiate(original);
-            var batchMaterialID = RenderUtility.RegisterMaterial(state.World, material.Value);
+            batchMaterialID = RenderUtility.RegisterMaterial(state.World, material.Value);
             ecb.SetName(prototype, "Glyph-" + material.Value.name);
             ecb.SetComponent(prototype, new MaterialMeshInfo(batchMaterialID, glyphMeshID));
             ecb.AddComponent(prototype, new Prefab());

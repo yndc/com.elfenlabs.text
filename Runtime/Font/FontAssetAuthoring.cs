@@ -60,6 +60,7 @@ namespace Elfenlabs.Text
             unsafe { Elfenlabs.Unsafe.UnsafeUtility.CopyArrayToPtr(AtlasState.ToArray(), atlasStateBuffer.GetUnsafePtr(), AtlasState.Count); }
 
             root.AtlasConfig = AtlasConfig;
+            root.RenderConfig = RenderConfig;
             root.Material = Material;
 
             var reference = builder.CreateBlobAssetReference<FontAssetData>(Allocator.Persistent);

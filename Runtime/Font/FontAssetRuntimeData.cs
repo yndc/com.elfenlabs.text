@@ -1,27 +1,34 @@
 using System;
+using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
+using UnityEngine.Rendering;
 
 namespace Elfenlabs.Text
 {
     public struct FontAssetRuntimeData : ICleanupSharedComponentData, IEquatable<FontAssetRuntimeData>
     {
+        public BlobAssetReference<FontAssetData> AssetReference;
         public FontDescription Description;
         public Entity PrototypeEntity;
 
         [NativeDisableContainerSafetyRestriction]
         public UnsafeHashMap<int, GlyphRuntimeData> GlyphMap;
 
+        [NativeDisableContainerSafetyRestriction]
+        public UnsafeParallelHashSet<int> MissingGlyphSet;
+
         public IntPtr AtlasHandle;
+        public BatchMaterialID MaterialID;
 
         public readonly bool Equals(FontAssetRuntimeData other)
         {
-            return PrototypeEntity.Equals(other.PrototypeEntity);
+            return AssetReference.Equals(other.AssetReference);
         }
 
         public override readonly int GetHashCode()
         {
-            return PrototypeEntity.GetHashCode();
+            return AssetReference.GetHashCode();
         }
     }
 }

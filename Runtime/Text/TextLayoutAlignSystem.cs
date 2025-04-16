@@ -11,7 +11,7 @@ namespace Elfenlabs.Text
         void OnUpdate(ref SystemState state)
         {
             var query = SystemAPI.QueryBuilder()
-                .WithAllRW<TextLayoutGlyphRuntimeBuffer>()
+                .WithAllRW<TextGlyphBuffer>()
                 .WithAll<TextLayoutSizeRuntime>()
                 .WithAll<TextLayoutAlign>()
                 .WithAll<TextLayoutRequireUpdate>()
@@ -41,7 +41,7 @@ namespace Elfenlabs.Text
                     lineStart = 0;
                 }
 
-                public void Align(ref DynamicBuffer<TextLayoutGlyphRuntimeBuffer> textGlyphs)
+                public void Align(ref DynamicBuffer<TextGlyphBuffer> textGlyphs)
                 {
                     for (int i = 0; i < textGlyphs.Length; i++)
                     {
@@ -61,7 +61,7 @@ namespace Elfenlabs.Text
                     AlignLine(ref textGlyphs, textGlyphs.Length);
                 }
 
-                void AlignLine(ref DynamicBuffer<TextLayoutGlyphRuntimeBuffer> textGlyphs, int lineEnd)
+                void AlignLine(ref DynamicBuffer<TextGlyphBuffer> textGlyphs, int lineEnd)
                 {
                     if (current < lineMax)
                     {
@@ -97,7 +97,7 @@ namespace Elfenlabs.Text
             }
 
             void Execute(
-                ref DynamicBuffer<TextLayoutGlyphRuntimeBuffer> textGlyphs,
+                ref DynamicBuffer<TextGlyphBuffer> textGlyphs,
                 in TextLayoutSizeRuntime textLayoutSize,
                 in TextLayoutAlign textLayoutAlign
             )

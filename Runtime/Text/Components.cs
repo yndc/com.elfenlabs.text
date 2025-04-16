@@ -12,10 +12,24 @@ namespace Elfenlabs.Text
         public static implicit operator byte(TextStringBuffer textBuffer) => textBuffer.Value;
     }
 
+    public struct TextGlyphBuffer : IBufferElementData
+    {
+        public Entity Entity;
+        public float2 PositionEm;
+        public float2 AdvanceEm;
+        public float2 OffsetEm;
+        public float2 RealSizeEm;
+        public float2 QuadSizeEm;
+        public int Cluster;
+        public int Line;
+    }
+
     public struct TextFontSize : IComponentData
     {
         public float Value;
     }
+
+    public struct TextGlyphRequireUpdate : IComponentData, IEnableableComponent { }
 
     [MaterialProperty("_GlyphAtlasIndex")]
     public struct MaterialPropertyGlyphAtlasIndex : IComponentData
