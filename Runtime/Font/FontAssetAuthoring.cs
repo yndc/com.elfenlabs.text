@@ -35,40 +35,39 @@ namespace Elfenlabs.Text
 
         public Material Material;
 
-        public FontAssetData CreateAssetData(Allocator allocator)
+        public FontAssetReference CreateAssetReference(Allocator allocator)
         {
-            var glyphMapBuilder = new BlobBuilder(Allocator.Temp);
-            var fontBytesBuilder = new BlobBuilder(Allocator.Temp);
-            ref BlobFlattenedHashMap<int, GlyphRuntimeData> glyphRectMap = ref glyphMapBuilder.ConstructRoot<BlobFlattenedHashMap<int, GlyphRuntimeData>>();
-            ref BlobArray<byte> fontBytes = ref fontBytesBuilder.ConstructRoot<BlobArray<byte>>();
+            var builder = new BlobBuilder(Allocator.Temp);
+            ref var root = ref builder.ConstructRoot<FontAssetData>();
 
+            // root.FlattenedGlyphMap
             var map = new UnsafeHashMap<int, GlyphRuntimeData>(Glyphs.Count, Allocator.Temp);
             for (int i = 0; i < Glyphs.Count; i++)
             {
                 var glyph = Glyphs[i];
                 map.Add(glyph.CodePoint, new GlyphRuntimeData(glyph, AtlasConfig.Size));
             }
+            root.FlattenedGlyphMap.Flatten(builder, map);
 
-            glyphRectMap.Flatten(glyphMapBuilder, map);
-
+            // root.FontBytes
             var fontPath = AssetDatabase.GetAssetPath(Font);
             var fontData = System.IO.File.ReadAllBytes(fontPath);
-            var fontBytesBuffer = fontBytesBuilder.Allocate(ref fontBytes, fontData.Length);
+            var fontBytesBuffer = builder.Allocate(ref root.FontBytes, fontData.Length);
             unsafe { Elfenlabs.Unsafe.UnsafeUtility.CopyArrayToPtr(fontData, fontBytesBuffer.GetUnsafePtr(), fontData.Length); }
 
-            var assetData = new FontAssetData
-            {
-                FlattenedGlyphMap = glyphMapBuilder.CreateBlobAssetReference<BlobFlattenedHashMap<int, GlyphRuntimeData>>(allocator),
-                FontBytes = fontBytesBuilder.CreateBlobAssetReference<BlobArray<byte>>(allocator),
-                Material = Material,
-                AtlasConfig = AtlasConfig,
-            };
+            // root.SerializedAtlasState
+            var atlasStateBuffer = builder.Allocate(ref root.SerializedAtlasState, AtlasState.Count);
+            unsafe { Elfenlabs.Unsafe.UnsafeUtility.CopyArrayToPtr(AtlasState.ToArray(), atlasStateBuffer.GetUnsafePtr(), AtlasState.Count); }
 
-            glyphMapBuilder.Dispose();
-            fontBytesBuilder.Dispose();
+            root.AtlasConfig = AtlasConfig;
+            root.Material = Material;
+
+            var reference = builder.CreateBlobAssetReference<FontAssetData>(Allocator.Persistent);
+
+            builder.Dispose();
             map.Dispose();
 
-            return assetData;
+            return new FontAssetReference { Value = reference };
         }
     }
 }

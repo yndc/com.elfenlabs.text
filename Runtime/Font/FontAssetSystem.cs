@@ -19,9 +19,9 @@ namespace Elfenlabs.Text
         EntityQuery assetInitQuery;
         EntityQuery assetCleanupQuery;
         EntityTypeHandle entityTypeHandle;
-        SharedComponentTypeHandle<FontAssetData> assetDataTypeHandle;
+        SharedComponentTypeHandle<FontAssetReference> assetDataTypeHandle;
         SharedComponentTypeHandle<FontAssetRuntimeData> assetRuntimeDataTypeHandle;
-        NativeBidirectionalHashMap<FontAssetData, FontAssetRuntimeData> runtimeAssetMap;
+        NativeBidirectionalHashMap<FontAssetReference, FontAssetRuntimeData> runtimeAssetMap;
         NativeHashCounter<FontAssetRuntimeData> runtimeAssetCounter;
         BatchMeshID glyphMeshID;
         Entity quadPrototype;
@@ -31,19 +31,19 @@ namespace Elfenlabs.Text
             state.RequireForUpdate<FontPluginRuntimeHandle>();
 
             assetInitQuery = SystemAPI.QueryBuilder()
-                .WithAll<FontAssetData>()
+                .WithAll<FontAssetReference>()
                 .WithNone<FontAssetRuntimeData>()
                 .Build();
 
             assetCleanupQuery = SystemAPI.QueryBuilder()
                 .WithAll<FontAssetRuntimeData>()
-                .WithNone<FontAssetData>()
+                .WithNone<FontAssetReference>()
                 .Build();
 
             entityTypeHandle = state.GetEntityTypeHandle();
-            assetDataTypeHandle = state.GetSharedComponentTypeHandle<FontAssetData>();
+            assetDataTypeHandle = state.GetSharedComponentTypeHandle<FontAssetReference>();
             assetRuntimeDataTypeHandle = state.GetSharedComponentTypeHandle<FontAssetRuntimeData>();
-            runtimeAssetMap = new NativeBidirectionalHashMap<FontAssetData, FontAssetRuntimeData>(32, Allocator.Persistent);
+            runtimeAssetMap = new NativeBidirectionalHashMap<FontAssetReference, FontAssetRuntimeData>(32, Allocator.Persistent);
             runtimeAssetCounter = new NativeHashCounter<FontAssetRuntimeData>(32, Allocator.Persistent);
             quadPrototype = MeshUtility.CreatePrefab(state.World, "Glyph", MeshUtility.CreateQuad(1f, 1f), Shader.Find("Elfenlabs/Text-MTSDF"), 0);
             glyphMeshID = RenderUtility.RegisterMesh(state.World, MeshUtility.CreateQuad());
@@ -77,14 +77,14 @@ namespace Elfenlabs.Text
                 {
                     FontLibrary.LoadFont(
                         pluginHandle,
-                        assetData.FontBytes.AsNativeBuffer(),
+                        assetData.Value.Value.FontBytes.AsNativeBuffer(),
                         out var fontDesc);
 
                     runtimeData = new FontAssetRuntimeData
                     {
                         Description = fontDesc,
-                        GlyphMap = assetData.FlattenedGlyphMap.Value.Reconstruct(Allocator.Persistent),
-                        PrototypeEntity = AdaptPrefab(ref state, ecb, quadPrototype, assetData.Material),
+                        GlyphMap = assetData.Value.Value.FlattenedGlyphMap.Reconstruct(Allocator.Persistent),
+                        PrototypeEntity = AdaptPrefab(ref state, ecb, quadPrototype, assetData.Value.Value.Material),
                     };
 
                     runtimeAssetMap.Add(assetData, runtimeData);

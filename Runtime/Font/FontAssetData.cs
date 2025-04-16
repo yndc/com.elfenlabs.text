@@ -5,26 +5,27 @@ using UnityEngine;
 
 namespace Elfenlabs.Text
 {
-    public struct FontAssetData : ISharedComponentData, IEquatable<FontAssetData>
+    public struct FontAssetReference : ISharedComponentData, IEquatable<FontAssetReference>
     {
-        public BlobAssetReference<BlobFlattenedHashMap<int, GlyphRuntimeData>> FlattenedGlyphMap;
-        public BlobAssetReference<BlobArray<byte>> FontBytes;
-        public UnityObjectRef<Material> Material;
-        public AtlasConfig AtlasConfig;
+        public BlobAssetReference<FontAssetData> Value;
 
-        public bool Equals(FontAssetData other)
+        public bool Equals(FontAssetReference other)
         {
-            return FlattenedGlyphMap.Equals(other.FlattenedGlyphMap)
-                && Material.Equals(other.Material)
-                && AtlasConfig.Equals(other.AtlasConfig);
+            return Value.Equals(other.Value);
         }
 
         public override readonly int GetHashCode()
         {
-            return HashCode.Combine(
-                FlattenedGlyphMap.GetHashCode(),
-                Material.GetHashCode(),
-                AtlasConfig);
+            return Value.GetHashCode();
         }
+    }
+
+    public struct FontAssetData
+    {
+        public BlobFlattenedHashMap<int, GlyphRuntimeData> FlattenedGlyphMap;
+        public BlobArray<byte> FontBytes;
+        public BlobArray<byte> SerializedAtlasState;
+        public AtlasConfig AtlasConfig;
+        public UnityObjectRef<Material> Material;
     }
 }

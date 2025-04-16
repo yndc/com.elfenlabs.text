@@ -21,7 +21,7 @@ namespace Elfenlabs.Text
             {
                 if (fontAssetReference.Value == null)
                     continue;
-                var assetData = fontAssetReference.Value.CreateAssetData(Allocator.Persistent);
+                var assetData = fontAssetReference.Value.CreateAssetReference(Allocator.Persistent);
                 preBakeReferenceQuery.SetSharedComponentFilterManaged(fontAssetReference);
                 state.EntityManager.AddSharedComponent(preBakeReferenceQuery, assetData);
                 state.EntityManager.RemoveComponent<FontAssetBakeRequest>(preBakeReferenceQuery);
