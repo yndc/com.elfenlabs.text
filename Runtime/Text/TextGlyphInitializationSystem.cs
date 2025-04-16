@@ -61,7 +61,7 @@ namespace Elfenlabs.Text
 
                 runtimeGlyphs.ResizeUninitialized(glyphShape.Count());
 
-                var atlasPixelToEm = 1f / fontAssetData.GlyphSize;
+                var atlasPixelToEm = 1f / fontAssetData.AtlasConfig.GlyphSize;
                 var fontUnitsToEm = 1f / fontRuntimeData.Description.UnitsPerEM;
                 var realGlyphCounter = 0; // Since not all glyphs are found in the font asset
                 for (int i = 0; i < glyphShape.Count(); i++)
@@ -78,7 +78,7 @@ namespace Elfenlabs.Text
 
                         // Real size is the real size of the glyph itself without padding
                         var realSize = new float2(glyphInfo.Metrics.WidthFontUnits, glyphInfo.Metrics.HeightFontUnits) * fontUnitsToEm;
-                        var quadSize = realSize + (2f * fontAssetData.Padding * atlasPixelToEm);
+                        var quadSize = realSize + (2f * fontAssetData.AtlasConfig.Padding * atlasPixelToEm);
 
                         Debug.Log("Glyph: " + glyphShape[i].CodePoint + " - " + glyphInfo.Metrics.LeftFontUnits + " - " + glyphInfo.Metrics.TopFontUnits + " - " + glyphInfo.Metrics.WidthFontUnits + " - " + glyphInfo.Metrics.HeightFontUnits);
 

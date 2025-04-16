@@ -10,9 +10,9 @@ namespace Elfenlabs.Text
     {
         void OnUpdate(ref SystemState state)
         {
-            var list = new List<FontAssetPreBakeReference>();
+            var list = new List<FontAssetBakeRequest>();
             var preBakeReferenceQuery = SystemAPI.QueryBuilder()
-                .WithAll<FontAssetPreBakeReference>()
+                .WithAll<FontAssetBakeRequest>()
                 .Build();
 
             state.EntityManager.GetAllUniqueSharedComponentsManaged(list);
@@ -24,7 +24,7 @@ namespace Elfenlabs.Text
                 var assetData = fontAssetReference.Value.CreateAssetData(Allocator.Persistent);
                 preBakeReferenceQuery.SetSharedComponentFilterManaged(fontAssetReference);
                 state.EntityManager.AddSharedComponent(preBakeReferenceQuery, assetData);
-                state.EntityManager.RemoveComponent<FontAssetPreBakeReference>(preBakeReferenceQuery);
+                state.EntityManager.RemoveComponent<FontAssetBakeRequest>(preBakeReferenceQuery);
             }
         }
     }

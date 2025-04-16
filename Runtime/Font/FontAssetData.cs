@@ -10,15 +10,13 @@ namespace Elfenlabs.Text
         public BlobAssetReference<BlobFlattenedHashMap<int, GlyphRuntimeData>> FlattenedGlyphMap;
         public BlobAssetReference<BlobArray<byte>> FontBytes;
         public UnityObjectRef<Material> Material;
-        public int Padding;
-        public int AtlasSize;
-        public int GlyphSize;
+        public AtlasConfig AtlasConfig;
 
         public bool Equals(FontAssetData other)
         {
             return FlattenedGlyphMap.Equals(other.FlattenedGlyphMap)
                 && Material.Equals(other.Material)
-                && Padding == other.Padding;
+                && AtlasConfig.Equals(other.AtlasConfig);
         }
 
         public override readonly int GetHashCode()
@@ -26,7 +24,7 @@ namespace Elfenlabs.Text
             return HashCode.Combine(
                 FlattenedGlyphMap.GetHashCode(),
                 Material.GetHashCode(),
-                Padding);
+                AtlasConfig);
         }
     }
 }

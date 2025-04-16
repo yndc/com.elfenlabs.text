@@ -24,11 +24,11 @@ namespace Elfenlabs.Text
         public TextAlign Align = TextAlign.Left;
     }
 
-    public struct FontAssetPreBakeReference : ISharedComponentData, IEquatable<FontAssetPreBakeReference>
+    public struct FontAssetBakeRequest : ISharedComponentData, IEquatable<FontAssetBakeRequest>
     {
         public FontAssetAuthoring Value;
 
-        public readonly bool Equals(FontAssetPreBakeReference other)
+        public readonly bool Equals(FontAssetBakeRequest other)
         {
             return Value == other.Value;
         }
@@ -48,7 +48,7 @@ namespace Elfenlabs.Text
             var entity = GetEntity(TransformUsageFlags.Dynamic);
             var buffer = AddBuffer<TextStringBuffer>(entity);
             StringUtility.CopyToDynamicBuffer(authoring.Text, buffer);
-            AddSharedComponentManaged(entity, new FontAssetPreBakeReference { Value = authoring.Font });
+            AddSharedComponentManaged(entity, new FontAssetBakeRequest { Value = authoring.Font });
             AddComponent(entity, new Parent());
             AddComponent(entity, new TextFontSize { Value = authoring.FontSize });
             AddComponent(entity, new TextLayoutMaxSize { Value = new float2(authoring.MaxWidth, 0f) });

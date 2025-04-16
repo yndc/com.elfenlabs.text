@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using Unity.Collections;
 using UnityEngine;
+using Unity.VisualScripting.YamlDotNet.Serialization;
+
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -29,8 +31,8 @@ namespace Elfenlabs.Text
                 return;
             }
 
-            self.CompactFlags = (AtlasCompactFlags)EditorGUILayout.EnumFlagsField("Compact Flags", self.CompactFlags);
-            self.GlyphRenderFlags = (GlyphRenderFlags)EditorGUILayout.EnumFlagsField("Glyph Render Flags", self.GlyphRenderFlags);
+            // self.CompactFlags = (AtlasCompactFlags)EditorGUILayout.EnumFlagsField("Compact Flags", self.CompactFlags);
+            self.RenderConfig.Flags = (GlyphRenderFlags)EditorGUILayout.EnumFlagsField("Glyph Render Flags", self.RenderConfig.Flags);
 
             if (GUILayout.Button("Shape Test"))
             {
@@ -97,37 +99,41 @@ namespace Elfenlabs.Text
         {
             ClearTexture();
 
-            // Prepare character set for generation
-            var charsetBuilder = new CharacterSetBuilder();
-            for (int i = 0; i < self.UnicodeRanges.Count; i++)
-                charsetBuilder.Add(self.UnicodeRanges[i]);
-            for (int i = 0; i < self.UnicodeSamples.Count; i++)
-                charsetBuilder.Add(self.UnicodeSamples[i]);
-            for (int i = 0; i < self.Ligatures.Count; i++)
-                charsetBuilder.Add(self.Ligatures[i]);
-            var str = charsetBuilder.ToString();
-
             // Generate atlas texture
-            var stringBuffer = NativeBuffer<byte>.FromString(str, Allocator.Temp);
             var textureArray = self.TextureArray;
             var fontDescription = LoadFont();
             var textureBuffer = NativeBuffer<Color32>.Alias(textureArray.GetPixelData<Color32>(0, 0));
-            FontLibrary.DrawAtlas(
+
+            // Prepare character set for generation
+            var glyphs = PrepareGlyphBuffer(Allocator.Temp);
+
+            FontLibrary.AtlasCreate(libCtx, self.AtlasConfig, out var atlasHandle);
+            FontLibrary.AtlasPackGlyphs(
                 libCtx,
                 fontDescription.Handle,
-                textureArray.width,
-                self.GlyphSize,
-                self.Padding,
-                self.Margin,
-                self.DistanceMappingRange,
-                (int)self.GlyphRenderFlags,
-                (int)self.CompactFlags,
-                Allocator.Temp,
-                in stringBuffer,
+                atlasHandle, 
+                self.RenderConfig,
+                ref glyphs,
                 ref textureBuffer,
-                out NativeBuffer<GlyphMetrics> glyphsBuffer
-            );
+                out var packedCount);
+
+            var remaining = glyphs.Count() - packedCount;
+            if (remaining > 0)
+            {
+                Debug.LogWarning($"Packed {packedCount} glyphs, {remaining} remaining.");
+            }
+
             textureArray.Apply();
+
+            // Serialize and save the atlas state 
+            FontLibrary.AtlasSerialize(
+                libCtx, atlasHandle, Allocator.Temp, out var serializedAtlasState
+            );
+            self.AtlasState = new List<byte>(serializedAtlasState.Count());
+            for (int i = 0; i < serializedAtlasState.Count(); i++)
+            {
+                self.AtlasState.Add(serializedAtlasState[i]);
+            }
 
             // Generate material
             if (self.Material == null)
@@ -144,16 +150,16 @@ namespace Elfenlabs.Text
             AssetDatabase.SaveAssets();
 
             // Serialize the glyph mapping result
-            self.Glyphs = new List<GlyphMetrics>(glyphsBuffer.Count());
-            for (int i = 0; i < glyphsBuffer.Count(); i++)
+            self.Glyphs = new List<GlyphMetrics>(glyphs.Count());
+            for (int i = 0; i < glyphs.Count(); i++)
             {
-                self.Glyphs.Add(glyphsBuffer[i]);
+                self.Glyphs.Add(glyphs[i]);
             }
 
             // Cleanup buffers
-            stringBuffer.Dispose();
-            textureBuffer.Dispose();
-            glyphsBuffer.Dispose();
+            glyphs.Dispose();
+            serializedAtlasState.Dispose();
+            FontLibrary.AtlasDestroy(libCtx, atlasHandle);
         }
 
         public void ClearTexture()
@@ -164,7 +170,7 @@ namespace Elfenlabs.Text
                 DestroyImmediate(self.TextureArray);
             }
 
-            var textureArray = new Texture2DArray(self.AtlasSize, self.AtlasSize, 1, TextureFormat.RGBA32, false);
+            var textureArray = new Texture2DArray(self.AtlasConfig.Size, self.AtlasConfig.Size, 1, TextureFormat.RGBA32, false);
             var rawColors = textureArray.GetPixelData<Color32>(0, 0);
             for (var i = 0; i < rawColors.Length; i++)
             {
@@ -179,6 +185,44 @@ namespace Elfenlabs.Text
             AssetDatabase.SaveAssets();
         }
 
+        NativeBuffer<GlyphMetrics> PrepareGlyphBuffer(Allocator allocator)
+        {
+            var fontDescription = LoadFont();
+
+            // Prepare character set for generation
+            var charsetBuilder = new CharacterSetBuilder();
+            for (int i = 0; i < self.UnicodeRanges.Count; i++)
+                charsetBuilder.Add(self.UnicodeRanges[i]);
+            for (int i = 0; i < self.UnicodeSamples.Count; i++)
+                charsetBuilder.Add(self.UnicodeSamples[i]);
+            for (int i = 0; i < self.Ligatures.Count; i++)
+                charsetBuilder.Add(self.Ligatures[i]);
+            var str = charsetBuilder.ToString();
+            var strBuffer = NativeBuffer<byte>.FromString(str, Allocator.Temp);
+
+            FontLibrary.ShapeText(libCtx, fontDescription.Handle, Allocator.Temp, strBuffer, out var glyphShapeResult);
+
+            var glyphSet = new NativeHashSet<int>(glyphShapeResult.Count(), Allocator.Temp);
+
+            for (int i = 0; i < glyphShapeResult.Count(); i++)
+            {
+                glyphSet.Add(glyphShapeResult[i].CodePoint);
+            }
+
+            var index = 0;
+            var glyphs = new NativeBuffer<GlyphMetrics>(glyphSet.Count, allocator);
+            foreach (var glyphCodePoint in glyphSet)
+            {
+                glyphs[index] = new GlyphMetrics { CodePoint = glyphCodePoint };
+                index++;
+            }
+
+            strBuffer.Dispose();
+            glyphShapeResult.Dispose();
+            glyphSet.Dispose();
+
+            return glyphs;
+        }
         FontDescription LoadFont()
         {
             var font = self.Font;

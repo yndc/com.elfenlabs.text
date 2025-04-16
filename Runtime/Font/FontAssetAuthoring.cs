@@ -15,13 +15,8 @@ namespace Elfenlabs.Text
         public Font Font;
 
         [Header("Atlas Settings")]
-        public int AtlasSize = 512;
-        public int GlyphSize = 32;
-        public int Padding = 4;
-        public int Margin = 2;
-        public float DistanceMappingRange = 0.5f;
-        public GlyphRenderFlags GlyphRenderFlags = GlyphRenderFlags.None;
-        public AtlasCompactFlags CompactFlags = AtlasCompactFlags.None;
+        public AtlasConfig AtlasConfig;
+        public RenderConfig RenderConfig;
 
         [Header("Character Set")]
         public List<UnicodeRange> UnicodeRanges;
@@ -33,6 +28,10 @@ namespace Elfenlabs.Text
 
         [ReadOnly]
         public List<GlyphMetrics> Glyphs;
+
+        [ReadOnly]
+        [HideInInspector]
+        public List<byte> AtlasState;
 
         public Material Material;
 
@@ -47,7 +46,7 @@ namespace Elfenlabs.Text
             for (int i = 0; i < Glyphs.Count; i++)
             {
                 var glyph = Glyphs[i];
-                map.Add(glyph.CodePoint, new GlyphRuntimeData(glyph, AtlasSize));
+                map.Add(glyph.CodePoint, new GlyphRuntimeData(glyph, AtlasConfig.Size));
             }
 
             glyphRectMap.Flatten(glyphMapBuilder, map);
@@ -62,9 +61,7 @@ namespace Elfenlabs.Text
                 FlattenedGlyphMap = glyphMapBuilder.CreateBlobAssetReference<BlobFlattenedHashMap<int, GlyphRuntimeData>>(allocator),
                 FontBytes = fontBytesBuilder.CreateBlobAssetReference<BlobArray<byte>>(allocator),
                 Material = Material,
-                Padding = Padding,
-                AtlasSize = AtlasSize,
-                GlyphSize = GlyphSize,
+                AtlasConfig = AtlasConfig,
             };
 
             glyphMapBuilder.Dispose();
