@@ -213,8 +213,9 @@ public:
             }
             byte_index += bytes_to_skip;
         }
-    }
+    };
 };
+
 #pragma pack(pop)
 
 /// @brief Buffer for output data

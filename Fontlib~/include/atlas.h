@@ -16,6 +16,7 @@ struct AtlasConfig
     int padding = 0;     // Padding around each glyph in pixels
     int margin = 1;      // Minimum distance between packed rectangles and the atlas border.
     int glyph_size = 32; // Size of the glyph in pixels (used for scaling)
+    int flags;
 };
 
 /**
@@ -59,7 +60,7 @@ public:
         // If size <= 2*margin, skyline remains empty and packing will fail.
     }
 
-    static DynamicAtlasPacker* Deserialize(Buffer<byte> *in_src_buffer)
+    static DynamicAtlasPacker *Deserialize(const Buffer<byte> *in_src_buffer)
     {
         auto reader = Buffer<byte>::Reader(in_src_buffer);
 

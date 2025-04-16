@@ -9,6 +9,8 @@ enum ReturnCode
 
     // General errors
     Failure = 0001,
+    InvalidArgument = 0002,
+    AllocationError = 0003,
 
     // Font errors
     FontNotFound = 1000,

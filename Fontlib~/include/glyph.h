@@ -33,13 +33,12 @@ struct GlyphMetrics
 void GetGlyphMetrics(Buffer<GlyphMetrics> glyphs, FontHandle *font_handle, int glyph_size, int padding)
 {
     FT_Face face = font_handle->ft;
+    auto units_per_em = face->units_per_EM;
     for (int i = 0; i < glyphs.Count(); ++i)
     {
         auto &glyph = glyphs[i];
         FT_Load_Glyph(face, glyph.index, FT_LOAD_NO_SCALE);
-
         auto metrics = face->glyph->metrics;
-        auto units_per_em = face->units_per_EM;
         glyph.width_fu = metrics.width;
         glyph.height_fu = metrics.height;
         glyph.left_fu = metrics.horiBearingX;
