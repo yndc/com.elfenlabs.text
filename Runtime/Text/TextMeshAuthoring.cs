@@ -1,9 +1,9 @@
 using UnityEngine;
 using Unity.Entities;
 using Elfenlabs.String;
-using System;
 using Unity.Transforms;
 using Unity.Mathematics;
+using Unity.Collections;
 
 namespace Elfenlabs.Text
 {
@@ -24,21 +24,6 @@ namespace Elfenlabs.Text
         public TextAlign Align = TextAlign.Left;
     }
 
-    public struct FontAssetBakeRequest : ISharedComponentData, IEquatable<FontAssetBakeRequest>
-    {
-        public FontAssetAuthoring Value;
-
-        public readonly bool Equals(FontAssetBakeRequest other)
-        {
-            return Value == other.Value;
-        }
-
-        public readonly override int GetHashCode()
-        {
-            return Value.GetHashCode();
-        }
-    }
-
     public class TextMeshAuthoringBaker : Baker<TextMeshAuthoring>
     {
         public override void Bake(TextMeshAuthoring authoring)
@@ -48,7 +33,6 @@ namespace Elfenlabs.Text
             var entity = GetEntity(TransformUsageFlags.Dynamic);
             var buffer = AddBuffer<TextStringBuffer>(entity);
             StringUtility.CopyToDynamicBuffer(authoring.Text, buffer);
-            AddSharedComponentManaged(entity, new FontAssetBakeRequest { Value = authoring.Font });
             AddComponent(entity, new Parent());
             AddComponent(entity, new TextFontSize { Value = authoring.FontSize });
             AddComponent(entity, new TextLayoutMaxSize { Value = new float2(authoring.MaxWidth, 0f) });
@@ -56,6 +40,15 @@ namespace Elfenlabs.Text
             AddComponent(entity, new TextLayoutAlign { Value = authoring.Align });
             AddComponent(entity, new TextLayoutRequireUpdate());
             SetComponentEnabled<TextLayoutRequireUpdate>(entity, true);
+
+            var fontAssetHash = new Unity.Entities.Hash128((uint)authoring.Font.GetHashCode(), 0, 0, 0);
+            if (!TryGetBlobAssetReference<FontAssetData>(fontAssetHash, out var fontAssetData))
+            {
+                fontAssetData = authoring.Font.CreateAssetReference(Allocator.Persistent);
+                AddBlobAssetWithCustomHash(ref fontAssetData, fontAssetHash);
+            }
+
+            AddSharedComponent(entity, new FontAssetReference { Value = fontAssetData });
         }
     }
 }

@@ -80,11 +80,17 @@ namespace Elfenlabs.Text
                         assetData.Value.Value.FontBytes.AsNativeBuffer(),
                         out var fontDesc);
 
+                    FontLibrary.AtlasDeserialize(
+                        pluginHandle, 
+                        assetData.Value.Value.SerializedAtlasState.AsNativeBuffer(), 
+                        out var atlasHandle);
+
                     runtimeData = new FontAssetRuntimeData
                     {
                         Description = fontDesc,
                         GlyphMap = assetData.Value.Value.FlattenedGlyphMap.Reconstruct(Allocator.Persistent),
                         PrototypeEntity = AdaptPrefab(ref state, ecb, quadPrototype, assetData.Value.Value.Material),
+                        AtlasHandle = atlasHandle,
                     };
 
                     runtimeAssetMap.Add(assetData, runtimeData);

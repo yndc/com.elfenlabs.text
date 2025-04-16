@@ -35,7 +35,7 @@ namespace Elfenlabs.Text
 
         public Material Material;
 
-        public FontAssetReference CreateAssetReference(Allocator allocator)
+        public BlobAssetReference<FontAssetData> CreateAssetReference(Allocator allocator)
         {
             var builder = new BlobBuilder(Allocator.Temp);
             ref var root = ref builder.ConstructRoot<FontAssetData>();
@@ -67,7 +67,7 @@ namespace Elfenlabs.Text
             builder.Dispose();
             map.Dispose();
 
-            return new FontAssetReference { Value = reference };
+            return reference;
         }
     }
 }

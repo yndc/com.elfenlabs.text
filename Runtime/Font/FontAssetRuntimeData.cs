@@ -12,6 +12,8 @@ namespace Elfenlabs.Text
         [NativeDisableContainerSafetyRestriction]
         public UnsafeHashMap<int, GlyphRuntimeData> GlyphMap;
 
+        public IntPtr AtlasHandle;
+
         public readonly bool Equals(FontAssetRuntimeData other)
         {
             return PrototypeEntity.Equals(other.PrototypeEntity);
