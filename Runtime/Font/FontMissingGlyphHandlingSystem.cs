@@ -6,19 +6,14 @@ using UnityEngine;
 
 namespace Elfenlabs.Text
 {
+    [UpdateInGroup(typeof(InitializationSystemGroup))]
+    [UpdateAfter(typeof(TextGlyphInitializationSystem))]
     public partial struct FontMissingGlyphHandlingSystem : ISystem
     {
-        EntityQuery query;
-
-        void OnCreate(ref SystemState state)
-        {
-
-        }
-
         void OnUpdate(ref SystemState state)
         {
             var pluginHandle = SystemAPI.GetSingleton<FontPluginRuntimeHandle>().Value;
-            var q = query = SystemAPI.QueryBuilder()
+            var query = SystemAPI.QueryBuilder()
                 .WithAll<FontAssetRuntimeData>()
                 .WithAll<TextGlyphBuffer>()
                 .Build();
@@ -40,6 +35,7 @@ namespace Elfenlabs.Text
                 {
                     glyphs[index] = new GlyphMetrics { CodePoint = glyphCodePoint };
                     index++;
+                    Debug.Log($"Adding glyph: {glyphCodePoint}");
                 }
 
                 var material = state.World.GetExistingSystemManaged<EntitiesGraphicsSystem>().GetMaterial(fontAssetRuntime.MaterialID);
@@ -67,20 +63,17 @@ namespace Elfenlabs.Text
 
                 Debug.Log($"Packed {packedCount} glyphs.");
 
-                q.SetSharedComponentFilter(fontAssetRuntime);
-
-                // We trigger a change in the text buffer to force reinitialization of the glyphs
-                // This is a bit of a hack, but it works for now
-                // TODO: Find a better way to do this
-                var entities = q.ToEntityArray(Allocator.Temp);
+                // TODO: at the moment all text that shares the same font asset will be updated.
+                // In the future only the text that requires the glyphs should be updated.
+                query.SetSharedComponentFilter(fontAssetRuntime);
+                var entities = query.ToEntityArray(Allocator.Temp);
                 Debug.Log($"Updating {entities.Length} entities with missing glyphs.");
                 foreach (var entity in entities)
                 {
-                    Debug.Log($"Updating entity {entity} with missing glyphs.");
-                    state.EntityManager.GetBuffer<TextStringBuffer>(entity);
+                    state.EntityManager.SetComponentEnabled<TextGlyphRequireUpdate>(entity, true);
                 }
 
-                fontAssetRuntime.MissingGlyphSet.Clear();
+                missingGlyphSet.Clear();
             }
         }
     }

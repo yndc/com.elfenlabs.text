@@ -13,7 +13,7 @@ namespace Elfenlabs.Text
         public Entity PrototypeEntity;
 
         [NativeDisableContainerSafetyRestriction]
-        public UnsafeHashMap<int, GlyphRuntimeData> GlyphMap;
+        public UnsafeParallelHashMap<int, GlyphRuntimeData> GlyphMap;
 
         [NativeDisableContainerSafetyRestriction]
         public UnsafeParallelHashSet<int> MissingGlyphSet;

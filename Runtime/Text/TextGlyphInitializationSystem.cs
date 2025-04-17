@@ -33,7 +33,8 @@ namespace Elfenlabs.Text
                 LayoutRequireUpdateLookup = SystemAPI.GetComponentLookup<TextLayoutRequireUpdate>()
             };
 
-            state.Dependency = initializationJob.ScheduleParallel(initializationQuery, state.Dependency);
+            // state.Dependency = initializationJob.ScheduleParallel(initializationQuery, state.Dependency);
+            initializationJob.Run(initializationQuery);
         }
 
         partial struct TextGlyphInitializationJob : IJobEntity
@@ -76,8 +77,11 @@ namespace Elfenlabs.Text
                 var fontUnitsToEm = 1f / fontRuntimeData.Description.UnitsPerEM;
                 for (int i = 0; i < glyphShape.Count(); i++)
                 {
+                    Debug.Log("Trying to add glyph: " + glyphShape[i].CodePoint);
                     if (fontRuntimeData.GlyphMap.TryGetValue(glyphShape[i].CodePoint, out var glyphInfo))
                     {
+                        Debug.Log("Glyph found: " + glyphShape[i].CodePoint);
+                        
                         // Calculate runtime values in em units
                         var advance = new float2(glyphShape[i].XAdvance, glyphShape[i].YAdvance) * fontUnitsToEm;
                         var bearingOffset = new float2(
@@ -121,6 +125,7 @@ namespace Elfenlabs.Text
                     }
                     else
                     {
+                        Debug.LogWarning($"Missing glyph: {glyphShape[i].CodePoint}");
                         fontRuntimeData.MissingGlyphSet.Add(glyphShape[i].CodePoint);
                     }
                 }

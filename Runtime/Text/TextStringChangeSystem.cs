@@ -11,7 +11,7 @@ namespace Elfenlabs.Text
         void OnUpdate(ref SystemState state)
         {
             var changedTextQuery = SystemAPI.QueryBuilder()
-                .WithPresent<TextGlyphRequireUpdate>()
+                .WithDisabled<TextGlyphRequireUpdate>()
                 .WithAll<TextStringBuffer>()
                 .WithAll<TextGlyphBuffer>()
                 .Build();
