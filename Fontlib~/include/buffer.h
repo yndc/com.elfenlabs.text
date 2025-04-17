@@ -115,7 +115,7 @@ public:
         {
         }
 
-        template <typename T, typename U>
+        template <typename U>
         void Write(const U &data)
         {
             static_assert(std::is_trivially_copyable<U>::value, "Read target type U must be trivially copyable");
@@ -125,7 +125,7 @@ public:
                 throw std::out_of_range("Buffer overflow in Writer::Write");
             }
 
-            memcpy(static_cast<unsigned char *>(dst) + byte_index, &data, sizeof(U));
+            memcpy(static_cast<byte*>(dst) + byte_index, &data, sizeof(U));
             byte_index += sizeof(U);
         }
     };
@@ -161,7 +161,7 @@ public:
             }
 
             U result;
-            const unsigned char *read_ptr = static_cast<const unsigned char *>(src) + byte_index;
+            const byte*read_ptr = static_cast<const byte*>(src) + byte_index;
             memcpy(&result, read_ptr, sizeof(U));
 
             byte_index += sizeof(U);

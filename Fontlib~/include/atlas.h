@@ -64,11 +64,11 @@ public:
     {
         auto reader = Buffer<byte>::Reader(in_src_buffer);
 
-        const uint32_t expected_magic = 0x41544C50; // "ATLP"
-        const uint32_t expected_version = 1;
+        const int32_t expected_magic = 0x41544C50; // "ATLP"
+        const int32_t expected_version = 1;
 
-        uint32_t magic = reader.Read<uint32_t>();
-        uint32_t version = reader.Read<uint32_t>();
+        int32_t magic = reader.Read<int32_t>();
+        int32_t version = reader.Read<int32_t>();
 
         if (magic != expected_magic || version != expected_version)
         {
@@ -77,14 +77,15 @@ public:
 
         AtlasConfig config;
 
-        config.size = reader.Read<int>();
-        config.padding = reader.Read<int>();
-        config.margin = reader.Read<int>();
-        config.glyph_size = reader.Read<int>();
+        config.size = reader.Read<int32_t>();
+        config.padding = reader.Read<int32_t>();
+        config.margin = reader.Read<int32_t>();
+        config.glyph_size = reader.Read<int32_t>();
+        config.flags = reader.Read<int32_t>();
 
         auto atlas = new DynamicAtlasPacker(config);
 
-        size_t node_count = reader.Read<int>();
+        size_t node_count = reader.Read<int32_t>();
 
         atlas->skyline.clear();
         atlas->skyline.reserve(node_count);
@@ -92,9 +93,9 @@ public:
         for (int i = 0; i < node_count; ++i)
         {
             SkylineNode node;
-            node.x = reader.Read<int>();
-            node.y = reader.Read<int>();
-            node.width = reader.Read<int>();
+            node.x = reader.Read<int32_t>();
+            node.y = reader.Read<int32_t>();
+            node.width = reader.Read<int32_t>();
             atlas->skyline.push_back(node);
         }
 
@@ -161,6 +162,7 @@ public:
                 break;
             }
         }
+
         return placed_count;
     }
 
@@ -205,6 +207,15 @@ public:
     }
 
     /**
+     * @brief Gets the number of skyline nodes currently in use.
+     * @return The number of skyline nodes.
+     */
+    int GetNodeCount() const
+    {
+        return static_cast<int32_t>(skyline.size());
+    }
+
+    /**
      * @brief Gets the current skyline state (for debugging or visualization).
      * Uses the fully qualified name for the nested struct. Coordinates are internal (Y-down).
      */
@@ -213,13 +224,19 @@ public:
         return skyline;
     }
 
-    int GetSerializedSize() const
+    /**
+     * @brief Calculates the expected serialized size of the current packer state.
+     * @return Size in bytes.
+     */
+    size_t GetSerializedSize() const
     {
-        size_t size = sizeof(uint32_t) * 2;           // Magic + version
-        size += sizeof(config);                       // Config
-        size += sizeof(int);                          // Number of nodes
-        size += skyline.size() * sizeof(SkylineNode); // Skyline nodes
-        return static_cast<int>(size);
+        size_t size = 0;
+        size += sizeof(int32_t);                        // Magic
+        size += sizeof(int32_t);                        // Version
+        size += sizeof(int32_t) * 5;                    // Config (size, padding, margin, glyph_size, flags)
+        size += sizeof(int32_t);                        // Node Count
+        size += skyline.size() * (sizeof(int32_t) * 3); // Skyline nodes (x, y, width)
+        return size;
     }
 
     /**
@@ -229,27 +246,28 @@ public:
      */
     void Serialize(Buffer<byte> *ref_dst_buffer) const
     {
-        const uint32_t magic = 0x41544C50; // "ATLP"
-        const uint32_t version = 1;
+        const int32_t magic = 0x41544C50; // "ATLP"
+        const int32_t version = 1;
         auto writer = Buffer<byte>::Writer(ref_dst_buffer);
 
         // Write Magic and Version
-        writer.Write<uint32_t>(magic);
-        writer.Write<uint32_t>(version);
+        writer.Write<int32_t>(magic);
+        writer.Write<int32_t>(version);
 
         // Write Config
-        writer.Write<int>(config.size);
-        writer.Write<int>(config.padding);
-        writer.Write<int>(config.margin);
-        writer.Write<int>(config.glyph_size);
+        writer.Write<int32_t>(config.size);
+        writer.Write<int32_t>(config.padding);
+        writer.Write<int32_t>(config.margin);
+        writer.Write<int32_t>(config.glyph_size);
+        writer.Write<int32_t>(config.flags);
 
         // Write Skyline Data
-        writer.Write<int>(skyline.size());
+        writer.Write<int32_t>(skyline.size());
         for (const auto &node : skyline)
         {
-            writer.Write<int>(node.x);
-            writer.Write<int>(node.y);
-            writer.Write<int>(node.width);
+            writer.Write<int32_t>(node.x);
+            writer.Write<int32_t>(node.y);
+            writer.Write<int32_t>(node.width);
         }
     }
 
@@ -287,7 +305,7 @@ private:
                     {
                         best_y = current_y;
                         best_x = skyline[i].x;
-                        best_node_index = static_cast<int>(i);
+                        best_node_index = static_cast<int32_t>(i);
                     }
                 }
             }

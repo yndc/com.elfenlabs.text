@@ -133,6 +133,14 @@ EXPORT_DLL ReturnCode AtlasDeserialize(
     DynamicAtlasPacker **out_atlas_handle)
 {
     *out_atlas_handle = DynamicAtlasPacker::Deserialize(in_buffer);
+    auto config = (*out_atlas_handle)->GetConfig();
+    auto node_count = (*out_atlas_handle)->GetNodeCount();
+    ctx->Log() << "Atlas node count: " << node_count << "\n";
+    ctx->Log() << "Atlas size: " << config.size << "\n";
+    ctx->Log() << "Atlas padding: " << config.padding << "\n";
+    ctx->Log() << "Atlas margin: " << config.margin << "\n";
+    ctx->Log() << "Atlas glyph size: " << config.glyph_size << "\n";
+    ctx->Log() << "Atlas flags: " << config.flags << "\n";
     return ReturnCode::Success;
 }
 
