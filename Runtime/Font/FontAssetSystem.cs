@@ -138,7 +138,25 @@ namespace Elfenlabs.Text
         readonly Entity AdaptPrefab(ref SystemState state, EntityCommandBuffer ecb, Entity original, UnityObjectRef<Material> material, out BatchMaterialID batchMaterialID)
         {
             var prototype = ecb.Instantiate(original);
-            batchMaterialID = RenderUtility.RegisterMaterial(state.World, material.Value);
+
+            // Clone the material and texture so runtime modifications don't affect the original
+            var originalTexture = material.Value.mainTexture as Texture2DArray;
+            var textureClone = new Texture2DArray(
+                originalTexture.width,
+                originalTexture.height,
+                originalTexture.depth,
+                originalTexture.format,
+                false
+            );
+            
+            Graphics.CopyTexture(originalTexture, textureClone);
+            var materialClone = new Material(material.Value)
+            {
+                mainTexture = textureClone
+            };
+
+            // Register the cloned material
+            batchMaterialID = RenderUtility.RegisterMaterial(state.World, materialClone);
             ecb.SetName(prototype, "Glyph-" + material.Value.name);
             ecb.SetComponent(prototype, new MaterialMeshInfo(batchMaterialID, glyphMeshID));
             ecb.AddComponent(prototype, new Prefab());
