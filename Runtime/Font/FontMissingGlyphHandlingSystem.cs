@@ -42,14 +42,22 @@ namespace Elfenlabs.Text
                 var textureArray = material.mainTexture as Texture2DArray;
                 var textureBuffer = NativeBuffer<Color32>.Alias(textureArray.GetPixelData<Color32>(0, 0));
 
-                FontLibrary.AtlasPackGlyphs(
+                FontLibrary.GetGlyphMetrics(
                     pluginHandle,
                     fontAssetRuntime.Description.Handle,
-                    fontAssetRuntime.AtlasHandle,
+                    fontAssetRuntime.AssetReference.Value.AtlasConfig.GlyphSize,
+                    fontAssetRuntime.AssetReference.Value.AtlasConfig.Padding,
+                    ref glyphs);
+
+                var packedCount = fontAssetRuntime.Atlas.PackGlyphs(glyphs.AsNativeArray());
+
+                FontLibrary.RenderGlyphsToAtlas(
+                    pluginHandle,
+                    fontAssetRuntime.Description.Handle,
+                    fontAssetRuntime.AssetReference.Value.AtlasConfig,
                     fontAssetRuntime.AssetReference.Value.RenderConfig,
-                    ref glyphs,
-                    ref textureBuffer,
-                    out var packedCount);
+                    in glyphs,
+                    ref textureBuffer);
 
                 textureArray.Apply();
 

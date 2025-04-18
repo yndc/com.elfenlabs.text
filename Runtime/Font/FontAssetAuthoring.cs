@@ -1,4 +1,5 @@
 using Elfenlabs.Collections;
+using Elfenlabs.Texture;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -31,7 +32,7 @@ namespace Elfenlabs.Text
 
         [ReadOnly]
         [HideInInspector]
-        public List<byte> AtlasState;
+        public BlobAssetReference<AtlasPacker<GlyphMetrics>.BlobSerialized> AtlasState;
 
         public Material Material;
 
@@ -55,9 +56,10 @@ namespace Elfenlabs.Text
             var fontBytesBuffer = builder.Allocate(ref root.FontBytes, fontData.Length);
             unsafe { Elfenlabs.Unsafe.UnsafeUtility.CopyArrayToPtr(fontData, fontBytesBuffer.GetUnsafePtr(), fontData.Length); }
 
-            // root.SerializedAtlasState
-            var atlasStateBuffer = builder.Allocate(ref root.SerializedAtlasState, AtlasState.Count);
-            unsafe { Elfenlabs.Unsafe.UnsafeUtility.CopyArrayToPtr(AtlasState.ToArray(), atlasStateBuffer.GetUnsafePtr(), AtlasState.Count); }
+            // root.SerializedAtlasPacker
+            var unpacked = AtlasState.Value.Deserialize(Allocator.Temp);
+            root.SerializedAtlasPacker.Serialize(builder, unpacked);
+            unpacked.Dispose();
 
             root.AtlasConfig = AtlasConfig;
             root.RenderConfig = RenderConfig;

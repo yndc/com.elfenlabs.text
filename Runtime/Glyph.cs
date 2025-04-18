@@ -1,12 +1,13 @@
 using System;
 using System.Runtime.InteropServices;
+using Elfenlabs.Texture;
 using Unity.Mathematics;
 
 namespace Elfenlabs.Text
 {
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    public struct GlyphMetrics
+    public struct GlyphMetrics : IRectangle
     {
         public int CodePoint;
         public int AtlasXPx;
@@ -17,6 +18,13 @@ namespace Elfenlabs.Text
         public int HeightFontUnits;
         public int LeftFontUnits;
         public int TopFontUnits;
+
+        public int X { readonly get => AtlasXPx; set => AtlasXPx = value; }
+        public int Y { readonly get => AtlasYPx; set => AtlasYPx = value; }
+
+        public readonly int Width => AtlasWidthPx;
+
+        public readonly int Height => AtlasHeightPx;
     }
 
     public struct GlyphRuntimeData

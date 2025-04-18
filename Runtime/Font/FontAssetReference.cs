@@ -1,5 +1,6 @@
 using System;
 using Elfenlabs.Collections;
+using Elfenlabs.Texture;
 using Unity.Entities;
 using UnityEngine;
 
@@ -24,7 +25,7 @@ namespace Elfenlabs.Text
     {
         public BlobFlattenedHashMap<int, GlyphRuntimeData> FlattenedGlyphMap;
         public BlobArray<byte> FontBytes;
-        public BlobArray<byte> SerializedAtlasState;
+        public AtlasPacker<GlyphMetrics>.BlobSerialized SerializedAtlasPacker;
         public AtlasConfig AtlasConfig;
         public RenderConfig RenderConfig;
         public UnityObjectRef<Material> Material;

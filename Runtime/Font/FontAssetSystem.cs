@@ -110,10 +110,7 @@ namespace Elfenlabs.Text
                         assetRef.Value.Value.FontBytes.AsNativeBuffer(),
                         out var fontDesc);
 
-            FontLibrary.AtlasDeserialize(
-                pluginHandle,
-                assetRef.Value.Value.SerializedAtlasState.AsNativeBuffer(),
-                out var atlasHandle);
+            var atlas = assetRef.Value.Value.SerializedAtlasPacker.Deserialize(Allocator.Persistent);
 
             return new FontAssetRuntimeData
             {
@@ -121,7 +118,7 @@ namespace Elfenlabs.Text
                 Description = fontDesc,
                 GlyphMap = assetRef.Value.Value.FlattenedGlyphMap.Reconstruct(Allocator.Persistent),
                 PrototypeEntity = AdaptPrefab(ref state, ecb, quadPrototype, assetRef.Value.Value.Material, out var batchMaterialID),
-                AtlasHandle = atlasHandle,
+                Atlas = atlas,
                 MissingGlyphSet = new UnsafeParallelHashSet<int>(32, Allocator.Persistent),
                 MaterialID = batchMaterialID,
             };

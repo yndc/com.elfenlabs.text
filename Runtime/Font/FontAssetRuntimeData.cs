@@ -1,4 +1,5 @@
 using System;
+using Elfenlabs.Texture;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
@@ -18,7 +19,7 @@ namespace Elfenlabs.Text
         [NativeDisableContainerSafetyRestriction]
         public UnsafeParallelHashSet<int> MissingGlyphSet;
 
-        public IntPtr AtlasHandle;
+        public AtlasPacker<GlyphMetrics> Atlas;
         public BatchMaterialID MaterialID;
 
         public readonly bool Equals(FontAssetRuntimeData other)

@@ -1,9 +1,5 @@
 using System;
 using System.Runtime.InteropServices;
-using Elfenlabs.Collections;
-using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
-using UnityEngine;
 
 namespace Elfenlabs.Text
 {

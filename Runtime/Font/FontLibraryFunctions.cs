@@ -118,101 +118,23 @@ namespace Elfenlabs.Text
             out NativeBuffer<ShapingGlyph> outGlyphs
         );
 
-
-        /// <summary>
-        /// Creates a new dynamic atlas packer instance.
-        /// </summary>
-        /// <param name="ctx">Plugin context (IntPtr, pass IntPtr.Zero if unused).</param>
-        /// <param name="config">Configuration for the atlas (size, margin).</param>
-        /// <param name="atlasHandle">Output: Handle (IntPtr) to the created packer instance.</param>
-        /// <returns>ReturnCode indicating success or failure.</returns>
-        /// <remarks>
-        /// The caller is responsible for destroying the packer using AtlasDestroy when no longer needed.
-        /// </remarks>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern ReturnCode AtlasCreate(
-            IntPtr ctx,
-            AtlasConfig config,
-            out IntPtr atlasHandle);
-
-
-        /// <summary>
-        /// Serializes the state of the atlas packer into a byte buffer allocated by the plugin.
-        /// </summary>
-        /// <param name="ctx">Plugin context (used for allocation by the plugin).</param>
-        /// <param name="atlasHandle">Handle (IntPtr) to the atlas packer instance.</param>
-        /// <param name="allocator">Allocator type for the plugin to use for the output buffer.</param>
-        /// <param name="buffer">Output: A BufferByte struct filled by the plugin with the pointer
-        /// and size of the newly allocated buffer containing serialized data.</param>
-        /// <returns>ReturnCode indicating success or failure.</returns>
-        /// <remarks>
-        /// The caller is responsible for freeing the memory pointed to by buffer.Ptr
-        /// using a corresponding Free function provided by the plugin API.
-        /// </remarks>
-        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern ReturnCode AtlasSerialize(
-            IntPtr ctx,
-            IntPtr atlasHandle,
-            Allocator allocator,
-            out NativeBuffer<byte> buffer);
-
-
-        /// <summary>
-        /// Creates a new atlas packer by deserializing state from a byte buffer.
-        /// </summary>
-        /// <param name="ctx">Plugin context (IntPtr, pass IntPtr.Zero if unused).</param>
-        /// <param name="buffer">Input: A BufferByte struct containing the pointer and size of the serialized data.</param>
-        /// <param name="atlasHandle">Output: Handle (IntPtr) to the newly created packer instance.</param>
-        /// <returns>ReturnCode indicating success or failure.</returns>
-        /// <remarks>
-        /// The caller provides the buffer containing the data.
-        /// The caller is responsible for destroying the created packer using AtlasDestroy.
-        /// </remarks>
-        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern ReturnCode AtlasDeserialize(
-            IntPtr ctx,
-            in NativeBuffer<byte> buffer,
-            out IntPtr atlasHandle);
-
-
-        /// <summary>
-        /// Destroys an atlas packer instance previously created by AtlasCreate or AtlasDeserialize.
-        /// </summary>
-        /// <param name="ctx">Plugin context (IntPtr, pass IntPtr.Zero if unused).</param>
-        /// <param name="atlasHandle">Handle (IntPtr) to the atlas packer instance to destroy.</param>
-        /// <returns>ReturnCode (usually Success).</returns>
-        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern ReturnCode AtlasDestroy(
-            IntPtr ctx,
-            IntPtr atlasHandle);
-
-
-        /// <summary>
-        /// Gets metrics, packs glyphs, and renders them into the atlas texture memory.
-        /// </summary>
-        /// <param name="ctx">Plugin context (IntPtr, pass IntPtr.Zero if unused).</param>
-        /// <param name="fontHandle">Handle (IntPtr) to the loaded font resource.</param>
-        /// <param name="atlasHandle">Handle (IntPtr) to the atlas packer instance.</param>
-        /// <param name="renderConfig">Configuration for rendering glyphs (e.g., MSDF parameters).</param>
-        /// <param name="glyphs">Input/Output: Buffer containing glyph metrics. C# provides buffer with
-        /// GlyphIndex set. C++ fills dimensions and packing position (AtlasXpx, AtlasYpx).</param>
-        /// <param name="texture">Input: Buffer wrapping the raw pixel data pointer and size of the target texture slice.</param>
-        /// <param name="packedCount">Output: The number of glyphs successfully packed in this call.</param>
-        /// <returns>ReturnCode indicating success or failure.</returns>
-        /// <remarks>
-        /// C# side MUST ensure thread safety if calling from off-main thread.
-        /// C# side MUST call Texture.Apply() or use other GPU synchronization after this call
-        /// if the texture buffer memory was modified.
-        /// </remarks>
-        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern ReturnCode AtlasPackGlyphs(
+        public static extern ReturnCode GetGlyphMetrics(
             IntPtr ctx,
             IntPtr fontHandle,
-            IntPtr atlasHandle,
+            int glyphSize,
+            int padding,
+            ref NativeBuffer<GlyphMetrics> refGlyphs
+        );
+
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern ReturnCode RenderGlyphsToAtlas(
+            IntPtr ctx,
+            IntPtr fontHandle,
+            AtlasConfig atlasConfig,
             RenderConfig renderConfig,
-            ref NativeBuffer<GlyphMetrics> glyphs,
-            ref NativeBuffer<Color32> texture,
-            out int packedCount);
+            in NativeBuffer<GlyphMetrics> glyphs,
+            ref NativeBuffer<Color32> texture);
 
         /// <summary>
         /// Retrieves debug information from the library.

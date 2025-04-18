@@ -3,7 +3,8 @@ using System;
 using System.Collections.Generic;
 using Unity.Collections;
 using UnityEngine;
-using Unity.VisualScripting.YamlDotNet.Serialization;
+using Elfenlabs.Texture;
+
 
 
 #if UNITY_EDITOR
@@ -107,15 +108,21 @@ namespace Elfenlabs.Text
             // Prepare character set for generation
             var glyphs = PrepareGlyphBuffer(Allocator.Temp);
 
-            FontLibrary.AtlasCreate(libCtx, self.AtlasConfig, out var atlasHandle);
-            FontLibrary.AtlasPackGlyphs(
+            var atlas = new AtlasPacker<GlyphMetrics>(
+                new AtlasPacker<GlyphMetrics>.Config
+                {
+                    Size = self.AtlasConfig.Size,
+                    Margin = self.AtlasConfig.Margin
+                }, Allocator.Persistent);
+
+            FontLibrary.GetGlyphMetrics(
                 libCtx,
                 fontDescription.Handle,
-                atlasHandle, 
-                self.RenderConfig,
-                ref glyphs,
-                ref textureBuffer,
-                out var packedCount);
+                self.AtlasConfig.GlyphSize,
+                self.AtlasConfig.Padding,
+                ref glyphs);
+
+            var packedCount = atlas.PackGlyphs(glyphs.AsNativeArray());
 
             var remaining = glyphs.Count() - packedCount;
             if (remaining > 0)
@@ -123,17 +130,17 @@ namespace Elfenlabs.Text
                 Debug.LogWarning($"Packed {packedCount} glyphs, {remaining} remaining.");
             }
 
-            textureArray.Apply();
+            self.AtlasState = AtlasPacker<GlyphMetrics>.BlobSerialized.Create(atlas);
 
-            // Serialize and save the atlas state 
-            FontLibrary.AtlasSerialize(
-                libCtx, atlasHandle, Allocator.Temp, out var serializedAtlasState
-            );
-            self.AtlasState = new List<byte>(serializedAtlasState.Count());
-            for (int i = 0; i < serializedAtlasState.Count(); i++)
-            {
-                self.AtlasState.Add(serializedAtlasState[i]);
-            }
+            FontLibrary.RenderGlyphsToAtlas(
+                libCtx,
+                fontDescription.Handle,
+                self.AtlasConfig,
+                self.RenderConfig,
+                in glyphs,
+                ref textureBuffer);
+
+            textureArray.Apply();
 
             // Generate material
             if (self.Material == null)
@@ -158,8 +165,6 @@ namespace Elfenlabs.Text
 
             // Cleanup buffers
             glyphs.Dispose();
-            serializedAtlasState.Dispose();
-            FontLibrary.AtlasDestroy(libCtx, atlasHandle);
         }
 
         public void ClearTexture()
@@ -168,6 +173,11 @@ namespace Elfenlabs.Text
             {
                 AssetDatabase.RemoveObjectFromAsset(self.TextureArray);
                 DestroyImmediate(self.TextureArray);
+            }
+
+            if (self.AtlasState.IsCreated)
+            {
+                self.AtlasState.Dispose();
             }
 
             var textureArray = new Texture2DArray(self.AtlasConfig.Size, self.AtlasConfig.Size, 1, TextureFormat.RGBA32, false);
