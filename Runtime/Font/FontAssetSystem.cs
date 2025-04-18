@@ -10,6 +10,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Rendering;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 
 namespace Elfenlabs.Text
@@ -145,11 +146,15 @@ namespace Elfenlabs.Text
                 originalTexture.width,
                 originalTexture.height,
                 originalTexture.depth,
-                originalTexture.format,
-                false
+                originalTexture.graphicsFormat,
+                TextureCreationFlags.None
             );
-            
-            Graphics.CopyTexture(originalTexture, textureClone);
+
+            for (int depth = 0; depth < originalTexture.depth; depth++)
+            {
+                Graphics.CopyTexture(originalTexture, depth, 0, textureClone, depth, 0);
+            }
+
             var materialClone = new Material(material.Value)
             {
                 mainTexture = textureClone
