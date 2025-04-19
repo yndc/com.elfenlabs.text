@@ -98,6 +98,7 @@ namespace Elfenlabs.Text
 
                 var renderHandle = renderJob.Schedule(updateMetricsHandle);
 
+                // If there is an ongoing render job running, combine the dependencies
                 if (existingJobHandle != default)
                 {
                     renderHandle = JobHandle.CombineDependencies(renderHandle, existingJobHandle);
@@ -107,8 +108,6 @@ namespace Elfenlabs.Text
                 // Dispose of the glyph metrics buffer after the render job is done
                 param.Glyphs.Dispose(renderHandle);
             }
-
-
         }
 
         /// <summary>
