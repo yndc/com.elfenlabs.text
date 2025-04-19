@@ -25,7 +25,7 @@ namespace Elfenlabs.Text
     {
         public BlobFlattenedHashMap<int, GlyphRuntimeData> FlattenedGlyphMap;
         public BlobArray<byte> FontBytes;
-        public AtlasPacker<GlyphMetrics>.BlobSerialized SerializedAtlasPacker;
+        public AtlasPacker<GlyphMetrics>.Blob SerializedAtlasPacker;
         public AtlasConfig AtlasConfig;
         public RenderConfig RenderConfig;
         public UnityObjectRef<Material> Material;

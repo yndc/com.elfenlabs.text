@@ -130,7 +130,7 @@ namespace Elfenlabs.Text
                 Debug.LogWarning($"Packed {packedCount} glyphs, {remaining} remaining.");
             }
 
-            self.AtlasState = AtlasPacker<GlyphMetrics>.BlobSerialized.Create(atlas);
+            self.AtlasBlobBytes = AtlasPacker<GlyphMetrics>.Blob.ToBytes(atlas);
 
             FontLibrary.RenderGlyphsToAtlas(
                 libCtx,
@@ -175,9 +175,9 @@ namespace Elfenlabs.Text
                 DestroyImmediate(self.TextureArray);
             }
 
-            if (self.AtlasState.IsCreated)
+            if (self.AtlasBlobBytes.Length > 0)
             {
-                self.AtlasState.Dispose();
+                self.AtlasBlobBytes = new byte[0];
             }
 
             var textureArray = new Texture2DArray(self.AtlasConfig.Size, self.AtlasConfig.Size, 1, TextureFormat.RGBA32, false);

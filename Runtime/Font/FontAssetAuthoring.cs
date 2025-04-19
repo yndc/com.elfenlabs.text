@@ -32,7 +32,7 @@ namespace Elfenlabs.Text
 
         [ReadOnly]
         [HideInInspector]
-        public BlobAssetReference<AtlasPacker<GlyphMetrics>.BlobSerialized> AtlasState;
+        public byte[] AtlasBlobBytes;
 
         public Material Material;
 
@@ -57,7 +57,7 @@ namespace Elfenlabs.Text
             unsafe { Elfenlabs.Unsafe.UnsafeUtility.CopyArrayToPtr(fontData, fontBytesBuffer.GetUnsafePtr(), fontData.Length); }
 
             // root.SerializedAtlasPacker
-            var unpacked = AtlasState.Value.Deserialize(Allocator.Temp);
+            var unpacked = AtlasPacker<GlyphMetrics>.Blob.Deserialize(AtlasBlobBytes, Allocator.Temp);
             root.SerializedAtlasPacker.Serialize(builder, unpacked);
             unpacked.Dispose();
 
