@@ -130,7 +130,7 @@ namespace Elfenlabs.Text
                 Debug.LogWarning($"Packed {packedCount} glyphs, {remaining} remaining.");
             }
 
-            self.AtlasBlobBytes = AtlasPacker<GlyphMetrics>.Blob.ToBytes(atlas);
+            self.AtlasBlobBytes = BlobUtility.ToBytes<AtlasPacker<GlyphMetrics>, AtlasPacker<GlyphMetrics>.Blob>(in atlas);
 
             FontLibrary.RenderGlyphsToAtlas(
                 libCtx,

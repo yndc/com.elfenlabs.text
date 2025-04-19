@@ -57,7 +57,7 @@ namespace Elfenlabs.Text
             unsafe { Elfenlabs.Unsafe.UnsafeUtility.CopyArrayToPtr(fontData, fontBytesBuffer.GetUnsafePtr(), fontData.Length); }
 
             // root.SerializedAtlasPacker
-            var unpacked = AtlasPacker<GlyphMetrics>.Blob.Deserialize(AtlasBlobBytes, Allocator.Temp);
+            var unpacked = BlobUtility.FromBytes<AtlasPacker<GlyphMetrics>, AtlasPacker<GlyphMetrics>.Blob>(AtlasBlobBytes, Allocator.Temp);
             root.SerializedAtlasPacker.Serialize(builder, unpacked);
             unpacked.Dispose();
 
