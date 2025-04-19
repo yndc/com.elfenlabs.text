@@ -13,7 +13,12 @@ namespace Elfenlabs.Text
     [UpdateAfter(typeof(TextGlyphInitializationSystem))]
     public partial struct FontMissingGlyphHandlingSystem : ISystem
     {
-        NativeHashMap<FontAssetRuntimeData, AtlasUpdateParameters> currentJobs;
+        NativeHashMap<FontAssetRuntimeData, JobHandle> existingUpdateJobs;
+
+        void OnCreate(ref SystemState state)
+        {
+            existingUpdateJobs = new NativeHashMap<FontAssetRuntimeData, JobHandle>(8, Allocator.Persistent);
+        }
 
         void OnUpdate(ref SystemState state)
         {
@@ -23,12 +28,25 @@ namespace Elfenlabs.Text
                 .WithAll<TextGlyphBuffer>()
                 .Build();
 
+            var egs = state.World.GetExistingSystemManaged<EntitiesGraphicsSystem>();
+
             state.EntityManager.GetAllUniqueSharedComponents<FontAssetRuntimeData>(out var fontAssetRuntimes, Allocator.Temp);
 
             foreach (var fontAssetRuntime in fontAssetRuntimes)
             {
                 if (fontAssetRuntime.PrototypeEntity == Entity.Null)
                     continue;
+
+                if (existingUpdateJobs.TryGetValue(fontAssetRuntime, out var existingJobHandle))
+                {
+                    if (existingJobHandle.IsCompleted)
+                    {
+                        // Upload the texture to the GPU
+                        (egs.GetMaterial(fontAssetRuntime.MaterialID).mainTexture as Texture2DArray).Apply();
+
+                        existingUpdateJobs.Remove(fontAssetRuntime);
+                    }
+                }
 
                 var missingGlyphSet = fontAssetRuntime.MissingGlyphSet;
                 if (missingGlyphSet.IsEmpty)
@@ -66,12 +84,12 @@ namespace Elfenlabs.Text
                 missingGlyphSet.Clear();
 
                 // Obtain pointer to the texture buffer
-                var material = state.World.GetExistingSystemManaged<EntitiesGraphicsSystem>().GetMaterial(fontAssetRuntime.MaterialID);
+                var material = egs.GetMaterial(fontAssetRuntime.MaterialID);
                 var textureArray = material.mainTexture as Texture2DArray;
                 var textureBuffer = NativeBuffer<Color32>.Alias(textureArray.GetPixelData<Color32>(0, 0));
                 param.TextureBuffer = textureBuffer;
 
-                // Run render job
+                // Schedule render job
                 var renderJob = new RenderAtlasJob
                 {
                     PluginHandle = pluginHandle,
@@ -80,16 +98,22 @@ namespace Elfenlabs.Text
 
                 var renderHandle = renderJob.Schedule(updateMetricsHandle);
 
-                renderHandle.Complete();
+                if (existingJobHandle != default)
+                {
+                    renderHandle = JobHandle.CombineDependencies(renderHandle, existingJobHandle);
+                }
+                existingUpdateJobs[fontAssetRuntime] = renderHandle;
 
-                // Apply the texture to the GPU
-                textureArray.Apply();
-
-                // Dispose of the glyph metrics buffer
-                param.Glyphs.Dispose();
+                // Dispose of the glyph metrics buffer after the render job is done
+                param.Glyphs.Dispose(renderHandle);
             }
+
+
         }
 
+        /// <summary>
+        /// Parameters for the atlas update jobs
+        /// </summary>
         struct AtlasUpdateParameters
         {
             public readonly FontAssetRuntimeData FontRuntime;
